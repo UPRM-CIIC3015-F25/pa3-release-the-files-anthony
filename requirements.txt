@@ -1,0 +1,4 @@
+# I have gotten into the habit of adding a requirements.txt file so I may as well.
+# The only module to import is pygame
+# Like always, 'pip install -r requirements.txt' straight into your console
+pygame
