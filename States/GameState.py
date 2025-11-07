@@ -41,6 +41,7 @@ class GameState(State):
         self.cardsSelectedRect = {}
         self.playedHandNameList = ['']
         self.used = []
+        self.sorting = ""
 
         self.redTint = pygame.image.load("Graphics/Backgrounds/redTint.png").convert_alpha()
         self.redTint = pygame.transform.scale(self.redTint, (1300, 750))
@@ -479,9 +480,11 @@ class GameState(State):
                     self.playHand()
 
             if self.sortRankRect.collidepoint(mousePosPlayerOpcions):
+                self.sorting = "rank"
                 self.SortCards(sort_by="rank")
 
             if self.sortSuitRect.collidepoint(mousePosPlayerOpcions):
+                self.sorting = "suit"
                 self.SortCards(sort_by="suit")
 
             if self.playerInfo.runInfoRect.collidepoint(
@@ -562,8 +565,10 @@ class GameState(State):
             sort_suits = False
         elif sort_by == "suit":
             sort_suits = True
+        elif sort_by == "":
+            return
         else:
-            raise IOError("sort_by must be of 'rank' or 'suit'")
+            raise IOError("sort_by must be of 'rank', 'suit' or an empty string ('')")
 
 
         hand_buffer = self.hand.copy()
@@ -860,8 +865,6 @@ class GameState(State):
     #   iterations (no for/while loops) — the recursion itself must handle repetition. After the
     #   recursion finishes, reset card selections, clear any display text or tracking lists, and
     #   update the visual layout of the player's hand.
-    # TODO: Check if it's possible to put the cards you draw right at the place for the cards discarded
-    #   like in the actual balatro
     def discardCards(self, removeFromHand: bool):
         if removeFromHand:  # Recursive cases
             if len(self.cardsSelectedList) > 0:  # If it isn't an empty hand, keep removing a card from the hand
@@ -879,4 +882,5 @@ class GameState(State):
         self.cardsSelectedRect = {}
         self.playedHandNameList = ['']
         self.used = []
+        self.SortCards(self.sorting)
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
