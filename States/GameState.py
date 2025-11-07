@@ -554,44 +554,48 @@ class GameState(State):
     #   with the ones after it. Depending on the mode, sort by rank first or suit first, swapping cards when needed
     #   until the entire hand is ordered correctly.
     def SortCards(self, sort_by: str = "suit"):
-        suitOrder = []   # Define the order of suits
+        # While programming this task, the code editor suggested I use random.shuffle
+        # The voices are begging me to use bogosort
+        suitOrder = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]   # Define the order of suits
 
         if sort_by == "rank":
-            pass
+            sort_suits = False
         elif sort_by == "suit":
-            suitOrder = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]
+            sort_suits = True
+        else:
+            raise IOError("sort_by must be of 'rank' or 'suit'")
 
-        # While programming this bit, the code editor suggested I use random.shuffle
-        # The voices are begging me to use bogosort
-        sorted_suits = []
-        if suitOrder:
+
+        hand_buffer = self.hand.copy()
+        is_sorted = False
+        while not is_sorted:
+            is_sorted = True
+            for i in range(len(hand_buffer)):
+                card = hand_buffer[i]
+                for j in range(i, len(hand_buffer)):
+                    card_rabbit = hand_buffer[j]
+                    if card.rank.value < card_rabbit.rank.value:
+                        popped_card = hand_buffer.pop(i)
+                        hand_buffer.append(popped_card)
+                        is_sorted = False
+                        break
+
+        full_hand = []
+        if sort_suits:
+            sorted_suits = []
             for suit in suitOrder:
                 suit_group = []
-                for card in self.hand:
+                for card in hand_buffer:
                     if card.suit == suit:
                         suit_group.append(card)
                 sorted_suits.append(suit_group)
+
+            for suits_group in sorted_suits:
+                for card in suits_group:
+                    full_hand.append(card)
         else:
-            sorted_suits = [self.hand.copy()]
+            full_hand = hand_buffer
 
-        is_sorted = False
-        for suit_group in sorted_suits:
-            while not is_sorted:
-                is_sorted = True
-                for i in range(len(suit_group)):
-                    card = suit_group[i]
-                    for j in range(i, len(suit_group)):
-                        card_rabbit = suit_group[j]
-                        if card.rank.value < card_rabbit.rank.value:
-                            popped_card = suit_group.pop(i)
-                            suit_group.append(popped_card)
-                            is_sorted = False
-                            break
-
-        full_hand = []
-        for suits_group in sorted_suits:
-            for card in suits_group:
-                full_hand.append(card)
 
         self.hand = full_hand
 
