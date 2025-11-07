@@ -549,12 +549,52 @@ class GameState(State):
                 y -= 50
             cardsDict[card] = pygame.Rect(x, y, new_w, new_h)
 
-    # TODO (TASK 2) - Implement a basic card-sorting system without using built-in sort functions.
+    # DONE (TASK 2) - Implement a basic card-sorting system without using built-in sort functions.
     #   Create a 'suitOrder' list (Hearts, Clubs, Diamonds, Spades), then use nested loops to compare each card
     #   with the ones after it. Depending on the mode, sort by rank first or suit first, swapping cards when needed
     #   until the entire hand is ordered correctly.
     def SortCards(self, sort_by: str = "suit"):
-        suitOrder = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]         # Define the order of suits
+        suitOrder = []   # Define the order of suits
+
+        if sort_by == "rank":
+            pass
+        elif sort_by == "suit":
+            suitOrder = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]
+
+        # While programming this bit, the code editor suggested I use random.shuffle
+        # The voices are begging me to use bogosort
+        sorted_suits = []
+        if suitOrder:
+            for suit in suitOrder:
+                suit_group = []
+                for card in self.hand:
+                    if card.suit == suit:
+                        suit_group.append(card)
+                sorted_suits.append(suit_group)
+        else:
+            sorted_suits = [self.hand.copy()]
+
+        is_sorted = False
+        for suit_group in sorted_suits:
+            while not is_sorted:
+                is_sorted = True
+                for i in range(len(suit_group)):
+                    card = suit_group[i]
+                    for j in range(i, len(suit_group)):
+                        card_rabbit = suit_group[j]
+                        if card.rank.value < card_rabbit.rank.value:
+                            popped_card = suit_group.pop(i)
+                            suit_group.append(popped_card)
+                            is_sorted = False
+                            break
+
+        full_hand = []
+        for suits_group in sorted_suits:
+            for card in suits_group:
+                full_hand.append(card)
+
+        self.hand = full_hand
+
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
     def checkHoverCards(self):
