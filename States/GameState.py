@@ -850,11 +850,29 @@ class GameState(State):
             w, h = card.scaled_image.get_width(), card.scaled_image.get_height()
             self.cardsSelectedRect[card] = pygame.Rect(start_x + i * spacing, start_y, w, h)
 
-    # TODO (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
+    # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been
     #   discarded, draw new cards to refill the hand back to 8 cards. Use helper functions but AVOID using
     #   iterations (no for/while loops) — the recursion itself must handle repetition. After the
     #   recursion finishes, reset card selections, clear any display text or tracking lists, and
     #   update the visual layout of the player's hand.
+    # TODO: Check if it's possible to put the cards you draw right at the place for the cards discarded
+    #   like in the actual balatro
     def discardCards(self, removeFromHand: bool):
+        if removeFromHand:  # Recursive cases
+            if len(self.cardsSelectedList) > 0:  # If it isn't an empty hand, keep removing a card from the hand
+                self.hand.remove(self.cardsSelectedList.pop())
+                self.discardCards(True)
+
+            self.discardCards(False) # If the hand is now empty, go into the next part of the loop
+
+        if len(self.hand) < 8:  # Alternate recursive case: fill the deck back up
+            new_card = self.deck.pop()
+            self.hand.append(new_card)
+            self.discardCards(False)
+
+        # Base case
+        self.cardsSelectedRect = {}
+        self.playedHandNameList = ['']
+        self.used = []
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
