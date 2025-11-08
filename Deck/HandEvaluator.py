@@ -79,7 +79,10 @@ def evaluate_hand(hand: list[Card]):
             card_rank = ranks_list[i]
             next_card_rank = ranks_list[i + 1]
             if card_rank.value != next_card_rank.value - 1:
-                if not ((card_rank.value == 2) and (Rank.ACE in ranks_list)):
+                # NOTE: Straight only works for numerical sequences or for
+                # [A, 5, 4, 3, 2], like in base Balatro.
+                # It does not numerically shift or overflow the other values
+                if not ((card_rank.value == 5) and (Rank.ACE in ranks_list)):
                     has_straight = False
                     break
 
