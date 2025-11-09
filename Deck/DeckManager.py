@@ -163,11 +163,11 @@ class DeckManager:
         priceMap = {"The Joker": 4,
                     "Michael Myers": 6,
                     "Fibonacci": 5,
-                    "Gaunlet": 5,
+                    "Gauntlet": 5,
                     "Ogre": 5,
                     "Straw Hat": 5,
                     "Hod Rider": 4,
-                    "? block": 5,
+                    "? Block": 5,
                     "Hogwarts": 6,
                     "802": 6
         }
