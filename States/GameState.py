@@ -5,6 +5,7 @@ from States.Core.StateClass import State
 from Cards.Card import Suit, Rank
 from States.Core.PlayerInfo import PlayerInfo
 from Deck.HandEvaluator import evaluate_hand
+from Levels.SubLevel import Blind
 
 
 HAND_SCORES = {
@@ -557,7 +558,7 @@ class GameState(State):
                         self.deselect_sfx.play()
                     return  # Stop after interacting with one card
 
-    # TODO (TASK 7) - Rewrite this function so that it calculates the player's gold reward *recursively*.
+    # DONE (TASK 7) - Rewrite this function so that it calculates the player's gold reward *recursively*.
     #   The recursion should progress through each step of the reward process (base reward, bonus for overkill, etc.)
     #   by calling itself with updated parameters or stages instead of using loops.
     #   Each recursive call should handle a single part of the reward logic, and the final base case should
@@ -568,7 +569,44 @@ class GameState(State):
     #     - A clear base case to stop recursion when all parts are done
     #   Avoid any for/while loops — recursion alone must handle the repetition.
     def calculate_gold_reward(self, playerInfo, stage=0):
-            return 0
+        # Base gold
+        sm_gold: int = 4
+        big_gold: int = 8
+        boss_gold: int = 10
+
+
+        # Base case
+        if stage > 0:
+            score = playerInfo.score
+            target = playerInfo.levelManager.curSubLevel.blind.value
+            reward = ((score - target) / target) * 5
+            print(f"score: {score}, target: {target}, reward: {reward}")
+
+            if reward < 0:
+                reward = 0
+            if reward > 5:
+                reward = 5
+
+            print(reward)
+
+            return int(round(reward, 0)) + stage
+
+
+        # The one recursive case lol
+        blind = playerInfo.levelManager.curSubLevel.blind
+        print(blind)
+        match blind.value:
+            case Blind.SMALL.value:
+                return self.calculate_gold_reward(playerInfo, sm_gold)
+            case Blind.BIG.value:
+                return self.calculate_gold_reward(playerInfo, big_gold)
+            case Blind.BOSS.value:
+                return self.calculate_gold_reward(playerInfo, boss_gold)
+
+        # Failsafe
+        return self.calculate_gold_reward(playerInfo, sm_gold)
+
+
 
     def updateCards(self, posX, posY, cardsDict, cardsList, scale=1.5, spacing=90, baseYOffset=-20, leftShift=40):
         cardsDict.clear()
