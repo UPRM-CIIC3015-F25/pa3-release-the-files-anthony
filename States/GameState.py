@@ -19,6 +19,36 @@ HAND_SCORES = {
     "High Card": {"chips": 5, "multiplier": 1, "level": 1},
 }
 
+def apply_planet_to_hand_scores(planet_card, HAND_SCORES):
+    """
+    planet_card: a PlanetCard instance (from PLANETS)
+    HAND_SCORES: dict of hand_name -> {"chips": int, "multiplier": int, "level": int}
+    Modifies HAND_SCORES in place.
+    """
+    desc = planet_card.description.lower()
+    if planet_card.name == "Sun" or "all" in desc:
+        # universal upgrade
+        for h in HAND_SCORES:
+            HAND_SCORES[h]["chips"] += planet_card.chips_bonus
+            HAND_SCORES[h]["multiplier"] += planet_card.multiplier_bonus
+            HAND_SCORES[h]["level"] += 1
+        return HAND_SCORES
+
+    # parse target hand name: expect "levels up <Hand Name>"
+    if "levels up" in desc:
+        # take substring after "levels up "
+        token = desc.split("levels up", 1)[1].strip()
+        # normalize to Title Case for match
+        target_hand = token.title()
+        # match exact hand name in HAND_SCORES keys if possible
+        for hand_name in HAND_SCORES.keys():
+            if hand_name.lower() == target_hand.lower():
+                HAND_SCORES[hand_name]["chips"] += planet_card.chips_bonus
+                HAND_SCORES[hand_name]["multiplier"] += planet_card.multiplier_bonus
+                HAND_SCORES[hand_name]["level"] += 1
+                break
+    return HAND_SCORES
+
 class GameState(State):
     def __init__(self, nextState: str = "", player: PlayerInfo = None):
         super().__init__(nextState)
