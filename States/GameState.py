@@ -579,17 +579,15 @@ class GameState(State):
         if stage > 0:
             score = playerInfo.score
             target = playerInfo.levelManager.curSubLevel.blind.value
-            reward = ((score - target) / target) * 5
-            print(f"score: {score}, target: {target}, reward: {reward}")
+            bonus = ((score - target) / target) * 5
 
-            if reward < 0:
-                reward = 0
-            if reward > 5:
-                reward = 5
+            if bonus < 0:
+                bonus = 0
+            if bonus > 5:
+                bonus = 5
 
-            print(reward)
 
-            return int(round(reward, 0)) + stage
+            return int(round(bonus, 0)) + stage
 
 
         # The one recursive case lol
