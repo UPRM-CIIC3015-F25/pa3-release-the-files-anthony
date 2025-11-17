@@ -16,7 +16,7 @@ class LevelManager():
         if p != None:
             self.p = p
 
-    # TODO (TASK 0) - Set up all levels and their corresponding sublevels.
+    # DONE BY DEFAULT (TASK 0) - Set up all levels and their corresponding sublevels.
     #   Each level should include a Small, Big, and Boss Blind, with Boss Blinds assigned unique names.
     #   Organize them in a dictionary structure where each key represents a level number.
     def setUpLevels(self): # Sets up all levels and sublevels
@@ -54,9 +54,16 @@ class LevelManager():
                     self.curSubLevel = self.curLevel[0]
                 self.p.levelFinished = True  # Signal UI to open LevelSelectState
 
-    # TODO (TASK 8) - Create a recursive function that finds the next unfinished sublevel.
+    # DONE (TASK 8) - Create a recursive function that finds the next unfinished sublevel.
     #   It should check each sublevel in order and return the first one that isn’t finished.
     #   Stop once all have been checked or one is found. Avoid using loops. (USE RECURSIONS)
-    def next_unfinished_sublevel(self, index=0):
-        return None
+    def next_unfinished_sublevel(self, index=0) -> SubLevel|None:
+        if index > 2:  # Reached End Stop
+            return None
+
+        current_level = self.levelsDict.get(self.p.playerAnte, {})[index]
+        if not current_level.finished:  # Base Case
+            return current_level
+
+        return self.next_unfinished_sublevel(index=(index + 1))  # Recursive Case
     
