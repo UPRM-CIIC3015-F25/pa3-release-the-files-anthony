@@ -914,6 +914,58 @@ class GameState(State):
         # Joker abilities are below
 
         procrastinate = False
+        bonus_802 = False
+
+        if "The Joker" in owned:
+            hand_mult += 4
+            self.activated_jokers.add("The Joker")
+
+        if "Michael Myers" in owned:
+            random_mult = random.randint(0, 23)
+            hand_mult += random_mult
+            self.activated_jokers.add("Michael Myers")
+
+        if "Fibonacci" in owned:
+            funny_cards = [two, three, five, eight, ace]
+            for card in self.cardsSelectedList:
+                if card.rank in funny_cards:
+                    hand_mult += 8
+            self.activated_jokers.add("Fibonacci")
+
+        if "Gauntlet" in owned:
+            total_chips += 250
+            self.playerInfo.amountOfHands -= 2
+            self.activated_jokers.add("Gauntlet")
+
+        if "Ogre" in owned:
+            joker_amount_mult = len(self.playerJokers) * 3
+            hand_mult += joker_amount_mult
+            self.activated_jokers.add("Ogre")
+
+        if "Straw Hat" in owned:
+            hands_played = len(self.playedHandNameList) - 1
+            total_chips += 100 - (5 * hands_played)
+            self.activated_jokers.add("Straw Hat")
+
+        if "Hog Rider" in owned:
+            if hand_name == "Straight":
+                total_chips += 100
+            self.activated_jokers.add("Hog Rider")
+
+        if "? Block" in owned and len(self.cardsSelectedList) == 4:
+            total_chips += 4
+            self.activated_jokers.add("? Block")
+
+        if "Hogwarts" in owned:
+            for card in self.cardsSelectedList:
+                if card.rank == ace:
+                    hand_mult += 4
+                    total_chips += 20
+            self.activated_jokers.add("Hogwarts")
+
+        if "802" in owned:
+            bonus_802 = False
+            self.activated_jokers.add("802")
 
         # commit modified player multiplier and chips
         self.playerInfo.playerMultiplier = hand_mult
@@ -925,6 +977,9 @@ class GameState(State):
         added_to_round = total_chips * hand_mult
         # Procrastination doubles the final hand's addition
         if 'procrastinate' in locals() and procrastinate:
+            added_to_round *= 2
+
+        if bonus_802:
             added_to_round *= 2
         self.pending_round_add = added_to_round  # defer actual addition until timer ends
 
@@ -941,54 +996,6 @@ class GameState(State):
         for i, card in enumerate(self.cardsSelectedList):
             w, h = card.scaled_image.get_width(), card.scaled_image.get_height()
             self.cardsSelectedRect[card] = pygame.Rect(start_x + i * spacing, start_y, w, h)
-
-        # JOKER ABILITES RAHHHHH
-
-        if "The Joker" in owned:
-            hand_mult += 4
-            self.activated_jokers.add("The Joker")
-
-        if "Michael Myers" in owned:
-            random_mult = random.randint(0, 23)
-            hand_mult += random_mult
-            self.activated_jokers.add("Michael Myers")
-
-        if "Fibonacci" in owned:
-            funny_cards = [two, three, five,
-                           eight, ace]
-            for card in self.cardsSelectedList:
-                if card.rank in funny_cards:
-                    hand_mult += 8
-
-        if "Gauntlet" in owned:
-            total_chips += 250
-            self.playerInfo.amountOfHands -= 2
-
-        if "Ogre" in owned:
-            joker_amount_mult = len(self.playerJokers) * 3
-            hand_mult += joker_amount_mult
-
-        if "Straw Hat" in owned:
-            hands_played = len(self.playedHandNameList) - 1
-            total_chips += 100 - (5 * hands_played)
-
-        if "Hog Rider" in owned:
-            if hand_name == "Straight":
-                total_chips += 100
-
-        if "? Block" in owned and len(self.cardsSelectedList) == 4:
-            total_chips += 4
-
-        if "Hogwarts" in owned:
-            for card in self.cardsSelectedList:
-                if card.rank == ace:
-                    hand_mult += 4
-                    total_chips += 20
-
-        if "802" in owned:
-            if self.playerInfo.amountOfHands == 0:
-                added_to_round *= 2
-
 
     # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been
