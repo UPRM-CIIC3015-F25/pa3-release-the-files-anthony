@@ -708,7 +708,7 @@ class GameState(State):
     
     # -------- Play Hand Logic -----------
     def playHand(self):
-        if self.playerInfo.amountOfHands == 0: # Check if last hand and failed the round
+        if self.playerInfo.amountOfHands <= 0: # Check if last hand and failed the round
             target_score = self.playerInfo.levelManager.curSubLevel.score
             if self.playerInfo.roundScore < target_score:
                 pygame.mixer.music.stop()
