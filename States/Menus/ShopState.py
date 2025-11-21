@@ -98,7 +98,50 @@ class ShopState(State):
     #   containing its "chips", "multiplier", and "level" fields.
     #   Remember: the Sun upgrades all hands, while other planets upgrade only their specific one.
     def activatePlanet(self, planet):
-        keys = HAND_SCORES.keys()
+        keys = HAND_SCORES = {
+    "Straight Flush": {"chips": 100, "multiplier": 8, "level": 1},
+    "Four of a Kind": {"chips": 60, "multiplier": 7, "level": 1},
+    "Full House": {"chips": 40, "multiplier": 4, "level": 1},
+    "Flush": {"chips": 35, "multiplier": 4, "level": 1},
+    "Straight": {"chips": 30, "multiplier": 4, "level": 1},
+    "Three of a Kind": {"chips": 30, "multiplier": 3, "level": 1},
+    "Two Pair": {"chips": 20, "multiplier": 2, "level": 1},
+    "One Pair": {"chips": 10, "multiplier": 2, "level": 1},
+    "High Card": {"chips": 5, "multiplier": 1, "level": 1},
+}
+
+
+    # ShopState.py
+
+    def apply_planet_to_hand_scores(planet_card, HAND_SCORES):
+        """
+        planet_card: a PlanetCard instance (from PLANETS)
+        HAND_SCORES: dict of hand_name -> {"chips": int, "multiplier": int, "level": int}
+        Modifies HAND_SCORES in place.
+        """
+        desc = planet_card.description.lower()
+        if planet_card.name == "Sun" or "all" in desc:
+            # universal upgrade
+            for h in HAND_SCORES:
+                HAND_SCORES[h]["chips"] += planet_card.chips_bonus
+                HAND_SCORES[h]["multiplier"] += planet_card.multiplier_bonus
+                HAND_SCORES[h]["level"] += 1
+            return HAND_SCORES
+
+        # parse target hand name: expect "levels up <Hand Name>"
+        if "levels up" in desc:
+            # take substring after "levels up "
+            token = desc.split("levels up", 1)[1].strip()
+            # normalize to Title Case for match
+            target_hand = token.title()
+            # match exact hand name in HAND_SCORES keys if possible
+            for hand_name in HAND_SCORES.keys():
+                if hand_name.lower() == target_hand.lower():
+                    HAND_SCORES[hand_name]["chips"] += planet_card.chips_bonus
+                    HAND_SCORES[hand_name]["multiplier"] += planet_card.multiplier_bonus
+                    HAND_SCORES[hand_name]["level"] += 1
+                    break
+        return HAND_SCORES
 
     # ---------- Helpers ----------
     def _wrap_lines(self, text, font, max_width):
