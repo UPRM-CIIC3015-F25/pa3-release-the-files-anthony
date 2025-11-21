@@ -936,7 +936,7 @@ class GameState(State):
             self.activated_jokers.add("Hogwarts")
 
         if "802" in owned:
-            bonus_802 = False
+            bonus_802 = True
             self.activated_jokers.add("802")
 
         # commit modified player multiplier and chips

@@ -98,7 +98,18 @@ class ShopState(State):
     #   containing its "chips", "multiplier", and "level" fields.
     #   Remember: the Sun upgrades all hands, while other planets upgrade only their specific one.
     def activatePlanet(self, planet):
-        keys = HAND_SCORES.keys()
+        # keys = HAND_SCORES.keys()
+        keys = HAND_SCORES = {
+            "Straight Flush": {"chips": 100, "multiplier": 8, "level": 1},
+            "Four of a Kind": {"chips": 60, "multiplier": 7, "level": 1},
+            "Full House": {"chips": 40, "multiplier": 4, "level": 1},
+            "Flush": {"chips": 35, "multiplier": 4, "level": 1},
+            "Straight": {"chips": 30, "multiplier": 4, "level": 1},
+            "Three of a Kind": {"chips": 30, "multiplier": 3, "level": 1},
+            "Two Pair": {"chips": 20, "multiplier": 2, "level": 1},
+            "One Pair": {"chips": 10, "multiplier": 2, "level": 1},
+            "High Card": {"chips": 5, "multiplier": 1, "level": 1},
+        }
 
     # ShopState.py
 
