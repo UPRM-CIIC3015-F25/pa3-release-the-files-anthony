@@ -910,8 +910,6 @@ class GameState(State):
                 case Enhancement.STEEL:
                     hand_mult *= 1.5
 
-
-
         # ------------------- Apply Joker effects -------------------
         owned = set(self.playerJokers)
         # TODO (TASK 5.2): Let the Joker mayhem begin! Implement each Joker’s effect using the Joker table as reference.
@@ -990,6 +988,7 @@ class GameState(State):
             bonus_802 = True
             self.activated_jokers.add("802")
 
+        # ------------------ Finalize Hand Scoring ------------------
         # commit modified player multiplier and chips
         self.playerInfo.playerMultiplier = hand_mult
         self.playerInfo.playerChips = total_chips
@@ -1019,6 +1018,7 @@ class GameState(State):
         for i, card in enumerate(self.cardsSelectedList):
             w, h = card.scaled_image.get_width(), card.scaled_image.get_height()
             self.cardsSelectedRect[card] = pygame.Rect(start_x + i * spacing, start_y, w, h)
+
         # ------------- Apply Effects for Winning Hand --------------
         if added_to_round > self.playerInfo.levelManager.curSubLevel.score:
             for c in held_cards:
