@@ -21,13 +21,25 @@ class Rank(Enum): # Enumeration for the thirteen card ranks
     KING = 13
     ACE = 14
 
+class Enhancement(Enum):
+    BASIC = "Basic Card"
+    BONUS = "Bonus Card"
+    MULT = "Mult Card"
+    WILD = "Wild Card"
+    GLASS = "Glass Card"
+    STEEL = "Steel Card"
+    STONE = "Stone Card"
+    GOLD = "Gold Card"
+    LUCKY = "Lucky Card"
+
 class Card:
-    def __init__(self, suit: Suit, rank: Rank, image=None): # Represents a single playing card with suit, rank, and optional image
+    def __init__(self, suit: Suit, rank: Rank, image=None, enhancement=Enhancement.BASIC): # Represents a single playing card with suit, rank, and optional image
         self.suit = suit
         self.rank = rank
         self.image = image
         self.faceDown = False
         self.isSelected = False
+        self.enhancement = enhancement
 
         if rank.value <= 10: # Chip value based on rank
             self.chips = rank.value

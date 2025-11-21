@@ -2,7 +2,7 @@ import pygame
 import random
 from States.Menus.DebugState import DebugState
 from States.Core.StateClass import State
-from Cards.Card import Suit, Rank
+from Cards.Card import Suit, Rank, Enhancement
 from States.Core.PlayerInfo import PlayerInfo
 from Deck.HandEvaluator import evaluate_hand
 from Levels.SubLevel import Blind
@@ -853,13 +853,64 @@ class GameState(State):
             best = max(sel, key=lambda c: c.rank.value)
             used_cards = [best]
 
+        # List of not-selected cards
+        held_cards = []
+        for c in list(self.cardsSelectedList):
+            if c not in sel:
+                held_cards.append(c)
+        print(held_cards)
+
         # Sum chips of only the used Cards
         card_chips_sum = 0
         for c in used_cards:
             card_chips_sum += c.chips
+            # Card scoring enhancements
+            # TODO: Verify if this match statement works or if you need to index the <.value>s
+            match c.enhancement:
+                case Enhancement.BONUS:
+                    card_chips_sum += 30
+                case Enhancement.MULT:
+                    hand_mult += 4
+                case Enhancement.GLASS:
+                    hand_mult *= 2
+                    if random.randint(1, 4) == 1:
+                        self.hand.remove(c)
+                        self.deck.remove(c)
+                case Enhancement.LUCKY:
+                    if random.randint(1, 5) == 1:
+                        hand_mult += 20
+                    if random.randint(1, 15) == 1:
+                        self.playerInfo.playerMoney += 20
 
         # total chips for display = base hand value + sum of used Cards' chips
         total_chips = hand_chips + card_chips_sum
+
+        # ----------------- Apply Card Enhancements -----------------
+        # TODO (BONUS): Apply the effects for every card enhancement that influences scoring
+        #   List of card enhancements that apply in scoring (above):
+        #   - Bonus Cards: Give an additional +30 chips when scored
+        #   - Mult Cards: Give an additional +4 Mult when scored
+        #   - Glass Cards: Give *2 mult when scored, with a 1 in 4 chance to self-destruct,
+        #       removing them from your deck for the rest of the run
+        #   - Lucky Cards: When scored, have a...
+        #       > 1 in 5 chance to give +20 mult when scored
+        #       > 1 in 15 chance to give $20
+        #       (Both effects are triggered independently and may occur simultaneously)
+        #   List of card enhancements that apply after scoring (below):
+        #   - Steel Cards: Give *1.5 mult when held in hand
+        #   - Gold Cards: Give $3 if held in hand AT THE END OF THE ROUND
+        #   List of card enhancements that definitely go somewhere else
+        #   - Wild Cards: Are considered of every suit simultaneously (HandEvaluator.py)
+        # -----------------------------------------------------------------
+
+        # ------------------ Effects for Held Cards ------------------------
+        # TODO: Same thing as above with the selected cards, check if the match statement actually works
+        for c in held_cards:
+            match c.enhancement:
+                case Enhancement.STEEL:
+                    hand_mult *= 1.5
+
+
 
         # ------------------- Apply Joker effects -------------------
         owned = set(self.playerJokers)
@@ -887,6 +938,7 @@ class GameState(State):
 
         procrastinate = False
 
+        # ------------------ Finalize Round Score -------------------
         # commit modified player multiplier and chips
         self.playerInfo.playerMultiplier = hand_mult
         self.playerInfo.playerChips = total_chips
@@ -960,6 +1012,13 @@ class GameState(State):
         if "802" in owned:
             if self.playerInfo.amountOfHands == 0:
                 added_to_round *= 2
+
+        # ------------- Apply Effects for Winning Hand --------------
+        if added_to_round > self.playerInfo.levelManager.curSubLevel.score:
+            for c in held_cards:
+                match c.enhancement:
+                    case Enhancement.GOLD:
+                        self.playerInfo.playerMoney += 3
 
 
     # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself

@@ -1,5 +1,5 @@
 from enum import Enum
-from Cards.Card import Card, Rank, Suit
+from Cards.Card import Card, Rank, Suit, Enhancement
 
 HAND_VALUES = {
     "Straight Flush": 9,
@@ -32,6 +32,13 @@ def evaluate_hand(hand: list[Card]):
     for card in hand:
         rank_counts[card.rank] = rank_counts.get(card.rank, 0) + 1
         suit_counts[card.suit] = suit_counts.get(card.suit, 0) + 1
+        if card.enhancement == Enhancement.WILD:
+            suit_counts[Suit.SPADES] = suit_counts.get(Suit.SPADES, 0) + 1
+            suit_counts[Suit.HEARTS] = suit_counts.get(Suit.HEARTS, 0) + 1
+            suit_counts[Suit.CLUBS] = suit_counts.get(Suit.CLUBS, 0) + 1
+            suit_counts[Suit.DIAMONDS] = suit_counts.get(Suit.DIAMONDS, 0) + 1
+
+
 
     # Check for hand types
     for rank in rank_counts:
