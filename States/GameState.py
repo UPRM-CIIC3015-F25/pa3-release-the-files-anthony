@@ -566,7 +566,6 @@ class GameState(State):
 
         # The one recursive case lol
         blind = playerInfo.levelManager.curSubLevel.blind
-        print(blind)
         match blind.value:
             case Blind.SMALL.value:
                 return self.calculate_gold_reward(playerInfo, sm_gold)
@@ -855,10 +854,9 @@ class GameState(State):
 
         # List of not-selected cards
         held_cards = []
-        for c in list(self.cardsSelectedList):
+        for c in list(self.hand):
             if c not in sel:
                 held_cards.append(c)
-        print(held_cards)
 
         # Sum chips of only the used Cards
         card_chips_sum = 0
