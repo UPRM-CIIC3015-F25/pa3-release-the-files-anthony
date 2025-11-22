@@ -40,10 +40,10 @@ class ShopState(State):
         self.shopPos = (350, 250)
 
         # --- State fields ---
-        self.joker_for_sell = None   # (joker_obj, screen_rect)
-        self.sell_rect = None        # screen-space sell button rect
-        self.joker_for_buy = None    # (joker_obj_or_planet, screen_rect)
-        self.buy_rect = None         # screen-space buy button rect
+        self.joker_for_sell = None  # (joker_obj, screen_rect)
+        self.sell_rect = None  # screen-space sell button rect
+        self.joker_for_buy = None  # (joker_obj_or_planet, screen_rect)
+        self.buy_rect = None  # screen-space buy button rect
         self.shop_random_joker_rects = []  # list[pygame.Rect] in screen coords
 
         self.selected_info = None
@@ -90,7 +90,7 @@ class ShopState(State):
             "Hogwarts": "Each Ace played grants +4 multiplier and +20 chips.",
             "802": "If this is the last hand of the round, double the final gain.",
         }
-        
+
         return desc_map.get(getattr(joker_obj, 'name', ''), "No description available.")
 
     # TODO (TASK 6.2): Implement the HAND_SCORES dictionary to define all poker hand types and their base stats.
@@ -98,50 +98,30 @@ class ShopState(State):
     #   containing its "chips", "multiplier", and "level" fields.
     #   Remember: the Sun upgrades all hands, while other planets upgrade only their specific one.
     def activatePlanet(self, planet):
-        # keys = HAND_SCORES.keys()
-        keys = HAND_SCORES = {
-            "Straight Flush": {"chips": 100, "multiplier": 8, "level": 1},
-            "Four of a Kind": {"chips": 60, "multiplier": 7, "level": 1},
-            "Full House": {"chips": 40, "multiplier": 4, "level": 1},
-            "Flush": {"chips": 35, "multiplier": 4, "level": 1},
-            "Straight": {"chips": 30, "multiplier": 4, "level": 1},
-            "Three of a Kind": {"chips": 30, "multiplier": 3, "level": 1},
-            "Two Pair": {"chips": 20, "multiplier": 2, "level": 1},
-            "One Pair": {"chips": 10, "multiplier": 2, "level": 1},
-            "High Card": {"chips": 5, "multiplier": 1, "level": 1},
-        }
+        chip_bonus = planet.chips_bonus
+        mult_bonus = planet.multiplier_bonus
+        keys = HAND_SCORES.keys()
 
-    # ShopState.py
-
-    def apply_planet_to_hand_scores(planet_card, HAND_SCORES):
-        """
-        planet_card: a PlanetCard instance (from PLANETS)
-        HAND_SCORES: dict of hand_name -> {"chips": int, "multiplier": int, "level": int}
-        Modifies HAND_SCORES in place.
-        """
-        desc = planet_card.description.lower()
-        if planet_card.name == "Sun" or "all" in desc:
-            # universal upgrade
-            for h in HAND_SCORES:
-                HAND_SCORES[h]["chips"] += planet_card.chips_bonus
-                HAND_SCORES[h]["multiplier"] += planet_card.multiplier_bonus
-                HAND_SCORES[h]["level"] += 1
-            return HAND_SCORES
-
-        # parse target hand name: expect "levels up <Hand Name>"
-        if "levels up" in desc:
-            # take substring after "levels up "
-            token = desc.split("levels up", 1)[1].strip()
-            # normalize to Title Case for match
-            target_hand = token.title()
-            # match exact hand name in HAND_SCORES keys if possible
-            for hand_name in HAND_SCORES.keys():
-                if hand_name.lower() == target_hand.lower():
-                    HAND_SCORES[hand_name]["chips"] += planet_card.chips_bonus
-                    HAND_SCORES[hand_name]["multiplier"] += planet_card.multiplier_bonus
+        #debugging prints
+        print(f"DEBUG: Activating planet {planet.name}")
+        print(f"DEBUG: Description: '{planet.description}'")
+        print(f"DEBUG: Bonuses: chips={chip_bonus}, mult={mult_bonus}")
+        for hand_name in keys:
+            if planet.name != "Sun":
+                if hand_name in planet.description:
+                    print(f"DEBUG: MATCH FOUND! Upgrading {hand_name}")
+                    HAND_SCORES[hand_name]["chips"] += chip_bonus
+                    HAND_SCORES[hand_name]["multiplier"] += mult_bonus
                     HAND_SCORES[hand_name]["level"] += 1
+                    print(f"DEBUG: {hand_name} now level {HAND_SCORES[hand_name]['level']}")
                     break
-        return HAND_SCORES
+            else:
+                print(f"DEBUG: Sun upgrading {hand_name}")
+                HAND_SCORES[hand_name]["chips"] += chip_bonus
+                HAND_SCORES[hand_name]["multiplier"] += mult_bonus
+                HAND_SCORES[hand_name]["level"] += 1
+
+        print("DEBUG: Activation complete")
 
     # ---------- Helpers ----------
     def _wrap_lines(self, text, font, max_width):
@@ -219,7 +199,7 @@ class ShopState(State):
             reroll_color = (70, 200, 100)
         else:
             reroll_color = (50, 160, 80)
-        #--- Draw shop UI ---
+        # --- Draw shop UI ---
         self.skipbuttondisp.fill(skip_color)
         self.rerollbuttondisp.fill(reroll_color)
         self.shopSurface.fill((30, 30, 30, 255))
@@ -302,7 +282,8 @@ class ShopState(State):
 
             rect = pygame.Rect(self.shopPos[0] + pos_x, self.shopPos[1] + pos_y, w, h)
             self.shop_random_joker_rects.append(rect)
-    #---- Sell button -----
+
+    # ---- Sell button -----
     def drawSell(self):
         if not self.joker_for_sell:
             self.sell_rect = None
@@ -383,7 +364,8 @@ class ShopState(State):
 
             # Buy / Sell
             if self.sell_rect and self.sell_rect.collidepoint(mousePos):
-                if not self.joker_for_sell or not isinstance(self.joker_for_sell, tuple) or len(self.joker_for_sell) < 1:
+                if not self.joker_for_sell or not isinstance(self.joker_for_sell, tuple) or len(
+                        self.joker_for_sell) < 1:
                     print("[SHOP] sell clicked but no joker selected")
                     self.sell_rect = None
                     self.selected_info = None
@@ -412,13 +394,15 @@ class ShopState(State):
                         for i, offer in enumerate(self.shop_random_jokers):
                             if isinstance(offer, PlanetCard) or isinstance(offer, Jokers):
                                 if offer.name == target_name:
-                                    rect = self.shop_random_joker_rects[i] if i < len(self.shop_random_joker_rects) else None
+                                    rect = self.shop_random_joker_rects[i] if i < len(
+                                        self.shop_random_joker_rects) else None
                                     recovered = (offer, rect)
                                     break
                             elif isinstance(offer, tuple):
                                 # tuple form (name, image)
                                 if offer[0] == target_name:
-                                    rect = self.shop_random_joker_rects[i] if i < len(self.shop_random_joker_rects) else None
+                                    rect = self.shop_random_joker_rects[i] if i < len(
+                                        self.shop_random_joker_rects) else None
                                     recovered = (offer, rect)
                                     break
                     if recovered is None:
@@ -441,9 +425,11 @@ class ShopState(State):
                     else:
                         print(f"[SHOP] buy: {joker_obj.name} not present when activating")
                     self.activatePlanet(joker_obj)
+                    print(f"DEBUG: After activation - One Pair level: {HAND_SCORES['One Pair']['level']}")
+                    print(f"DEBUG: After activation - Flush level: {HAND_SCORES['Flush']['level']}")
                     if joker_obj is not None and joker_obj.name:
                         self.removed_offers.add(joker_obj.name)
-                    
+
                 else:
                     if self.playerInfo.playerMoney >= price and len(self.game_state.playerJokers) < 2:
                         self.game_state.playerJokers.append(joker_obj.name)
@@ -460,7 +446,8 @@ class ShopState(State):
                             self.removed_offers.add(joker_obj.name)
                         # Do not refill offers immediately after purchase.
                     else:
-                        print(f"[SHOP] buy: cannot afford or inventory full: price={price}, money={self.playerInfo.playerMoney}, owned={len(self.game_state.playerJokers)}")
+                        print(
+                            f"[SHOP] buy: cannot afford or inventory full: price={price}, money={self.playerInfo.playerMoney}, owned={len(self.game_state.playerJokers)}")
                 self.joker_for_buy = None
                 self.buy_rect = None
                 self.selected_info = None
@@ -482,7 +469,8 @@ class ShopState(State):
                         else:
                             price = None
                         self.joker_for_sell = (joker_obj, joker_rect)
-                        self.selected_info = {'name': joker_obj.name, 'desc': desc_text, 'price': price, 'can_buy': False}
+                        self.selected_info = {'name': joker_obj.name, 'desc': desc_text, 'price': price,
+                                              'can_buy': False}
                         return
 
             # Shop offers
