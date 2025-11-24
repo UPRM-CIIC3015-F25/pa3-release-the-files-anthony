@@ -2,6 +2,7 @@ import pygame
 import random
 import os
 from Cards.Planets import PLANETS, PlanetCard
+from Cards.Tarots import TAROTS, TarotCard
 from Cards.Jokers import Jokers
 from States.GameState import HAND_SCORES
 from States.Core.StateClass import State
@@ -48,6 +49,7 @@ class ShopState(State):
 
         self.selected_info = None
         self.planet_cards = []
+        self.tarot_cards = []
 
         # load planet art and initialize offers
         self.loadPlanets()
@@ -55,6 +57,14 @@ class ShopState(State):
             self.selected_planet = random.choice(self.planet_cards)
         else:
             self.selected_planet = None
+
+        # load tarot art and initialize offers
+        self.loadTarots()
+        if self.tarot_cards:
+            self.selected_tarot = random.choice(self.tarot_cards)
+        else:
+            self.selected_tarot = None
+
         self.shop_random_jokers = []
         self.removed_offers = set()
         self.pickTwoRandomJokers()
@@ -88,10 +98,9 @@ class ShopState(State):
                 name = os.path.splitext(file)[0]
                 image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
                 key = name[6:]
-                # TODO: Attach image back into TAROTS and3 keep reference
-                # if key in TAROTS:
-                #     TAROTS[key].image = image
-                #     self.planet_cards.append(TAROTS[key])
+                if key in TAROTS:
+                    TAROTS[key].image = image
+                    self.planet_cards.append(TAROTS[key])
 
     # ---------- Descriptions ----------
     def _pretty_joker_description(self, joker_obj):
@@ -442,8 +451,8 @@ class ShopState(State):
                     else:
                         print(f"[SHOP] buy: {joker_obj.name} not present when activating")
                     self.activatePlanet(joker_obj)
-                    print(f"DEBUG: After activation - One Pair level: {HAND_SCORES['One Pair']['level']}")
-                    print(f"DEBUG: After activation - Flush level: {HAND_SCORES['Flush']['level']}")
+                    # print(f"DEBUG: After activation - One Pair level: {HAND_SCORES['One Pair']['level']}")
+                    # print(f"DEBUG: After activation - Flush level: {HAND_SCORES['Flush']['level']}")
                     if joker_obj is not None and joker_obj.name:
                         self.removed_offers.add(joker_obj.name)
 
