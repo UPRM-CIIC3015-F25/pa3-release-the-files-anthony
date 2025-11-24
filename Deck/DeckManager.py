@@ -2,8 +2,11 @@ from locale import locale_alias
 
 import pygame
 import random
+import os
 from Cards.Card import Suit, Rank, Card
 from Cards.Jokers import Jokers
+from Cards.Planets import PLANETS
+from Cards.Tarots import TAROTS
 from Levels.SubLevel import SubLevel
 
 import Cards.Planets as Planets
@@ -142,6 +145,50 @@ class DeckManager:
 
         return jokers
 
+    # ---------- Preload planet art ----------
+    def preloadPlanets(self):
+        folder = "Graphics/cards/Planets"
+        if not os.path.exists(folder):
+            print("[ERROR] Planet folder not found:", folder)
+            return
+        for file in os.listdir(folder):
+            if file.startswith("Planet") and file.endswith(".png"):
+                name = os.path.splitext(file)[0]
+                image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
+                key = name[6:]
+                # Attach image back into PLANETS
+                if key in PLANETS:
+                    PLANETS[key].image = image
+
+    # ---------- Preload tarot art ----------
+    def preloadTarots(self):
+        ABBREVIATIONS = {
+            "SilverChariot": "Silver Chariot",
+            "MagiciansRed": "Magician's Red",
+            "StarPlatinum": "Star Platinum",
+            "HierophantGreen": "Hierophant Green",
+            "Justice": "Justice",
+            "Judgment": "Judgment",
+            "TheFool": "The Fool",
+            "TheEmperor": "The Emperor",
+            "TheHangedMan": "The Hanged Man",
+            "Death13": "Death 13",
+            "TheWorld2": "The World"
+        }
+
+        folder = "Graphics/cards/Tarots"
+        if not os.path.exists(folder):
+            print("[ERROR] Tarot folder not found:", folder)
+            return
+        for file in os.listdir(folder):
+            if file.startswith("Tarot") and file.endswith(".png"):
+                name = os.path.splitext(file)[0]
+                image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
+                key = name[5:]
+                # Attach image back into TAROTS
+                if key in ABBREVIATIONS:
+                    TAROTS[ABBREVIATIONS[key]].image = image
+
     # TODO: Consumable image loading
     def loadConsumableImages(self) -> dict[str, Planets.PlanetCard|Tarots.TarotCard]:
         """
@@ -149,18 +196,25 @@ class DeckManager:
         uniformly to the target height. Automatically adjusts slicing
         to prevent out-of-bounds errors.
         """
+        # Preload Planet and Tarot cards
+        self.preloadPlanets()
+        self.preloadTarots()
 
         consumables = {}
         for name in Planets.PLANETS:
-            if Planets.PLANETS[name].image != None:
+            # print(f"{name}: {Planets.PLANETS[name]}")
+            if Planets.PLANETS[name].image:
                 consumables[name] = Planets.PLANETS[name].image
             else:
+                print("[DEBUG ERROR] Planet card image not found")
                 continue
         for name in Tarots.TAROTS:
-             if Tarots.TAROTS[name].image != None:
-                 consumables[name] = Tarots.TAROTS[name].image
-             else:
-                 continue
+            # print(f"{name}: {Tarots.TAROTS[name]}")
+            if Tarots.TAROTS[name].image:
+                consumables[name] = Tarots.TAROTS[name].image
+            else:
+                print("[DEBUG ERROR] Tarot card image not found")
+                continue
 
         return consumables
 

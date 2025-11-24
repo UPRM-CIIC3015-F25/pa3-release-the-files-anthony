@@ -113,6 +113,7 @@ class ShopState(State):
                 name = os.path.splitext(file)[0]
                 image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
                 key = name[6:]
+                # Attach image back into TAROTS and3 keep reference
                 if key in TAROTS:
                     TAROTS[key].image = image
                     self.tarot_cards.append(TAROTS[key])
