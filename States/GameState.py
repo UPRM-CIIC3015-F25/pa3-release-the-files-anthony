@@ -418,7 +418,7 @@ class GameState(State):
 
             rect = pygame.Rect(draw_x, draw_y, new_w, new_h)
             if self.playHandActive:  # TODO: looks nice and silly rn but may look unprofessional in production
-                rect = rect.move(0, 50)
+                rect = rect.move(20, -50)
 
             self.consumables[consum] = rect
             State.screen.blit(scaled, rect)
