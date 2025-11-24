@@ -100,7 +100,7 @@ class ShopState(State):
                 key = name[6:]
                 if key in TAROTS:
                     TAROTS[key].image = image
-                    self.planet_cards.append(TAROTS[key])
+                    self.tarot_cards.append(TAROTS[key])
 
     # ---------- Descriptions ----------
     def _pretty_joker_description(self, joker_obj):
@@ -418,7 +418,7 @@ class ShopState(State):
                         target_name = self.selected_info.get('name')
                         # search current offers for a matching name
                         for i, offer in enumerate(self.shop_random_jokers):
-                            if isinstance(offer, PlanetCard) or isinstance(offer, Jokers):
+                            if isinstance(offer, PlanetCard) or isinstance(offer, TarotCard) or isinstance(offer, Jokers):
                                 if offer.name == target_name:
                                     rect = self.shop_random_joker_rects[i] if i < len(
                                         self.shop_random_joker_rects) else None
