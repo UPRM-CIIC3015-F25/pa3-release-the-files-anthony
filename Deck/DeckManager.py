@@ -12,7 +12,7 @@ class DeckManager:
         self.targetJokerH = 150 # Unified Joker display height
         # === Joker names in order (left-to-right, top-to-bottom) ===
         self.jokerNames = [
-            "Fibonacci", "Michael Myers", "? Block", "Hogwarts", "StrawHat",
+            "Fibonacci", "Michael Myers", "? Block", "Hogwarts", "Straw Hat",
             "802", "Ogre", "Hog Rider", "Gauntlet", "The Joker"
         ]
     # ---------- Helpers ----------

@@ -84,7 +84,7 @@ class ShopState(State):
             "Fibonacci": "For each Ace/2/3/5/8 played, add +8 to the multiplier.",
             "Gauntlet": "Grant +250 chips but reduce remaining hands by 2.",
             "Ogre": "Add +3 to the multiplier for each joker you own.",
-            "StrawHat": "Grant +100 chips, then -5 per hand already played this round.",
+            "Straw Hat": "Grant +100 chips, then -5 per hand already played this round.",
             "Hog Rider": "If the played hand is a Straight, add +100 chips.",
             "? Block": "If the played hand used exactly 4 cards, add +4 chips.",
             "Hogwarts": "Each Ace played grants +4 multiplier and +20 chips.",

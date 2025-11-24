@@ -137,7 +137,7 @@ class GameState(State):
             "Gauntlet": "Grant +250 chips but reduce remaining hands by 2.",
 
             "Ogre": "Add +3 to the multiplier for each joker you own.",
-            "StrawHat": "Grant +100 chips, then -5 per hand already played this round.",
+            "Straw Hat": "Grant +100 chips, then -5 per hand already played this round.",
             "Hog Rider": "If the played hand is a Straight, add +100 chips.",
             "? Block": "If the played hand used exactly 4 Cards, add +4 chips.",
             "Hogwarts": "Each Ace played grants +4 multiplier and +20 chips.",
@@ -962,9 +962,11 @@ class GameState(State):
             self.activated_jokers.add("Ogre")
 
         if "Straw Hat" in owned:
-            hands_played = len(self.playedHandNameList) - 1
-            total_chips += 100 - (5 * hands_played)
+            hands_played = max(0, len(self.playedHandNameList) - 1)
+            bonus = max(0, 100 - (5 * hands_played))
+            total_chips += bonus
             self.activated_jokers.add("Straw Hat")
+            print("ONE PIECEEEEEE, THE ONE PIECE IS REAAAALLLLL")
 
         if "Hog Rider" in owned:
             if hand_name == "Straight":
