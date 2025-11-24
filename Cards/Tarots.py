@@ -12,16 +12,16 @@ class TarotCard:
     def sellPrice(self):
         return int(self.price * 0.6)
 
-Tarots = {
-    "Silver Chariot": TarotCard("Silver Chariot", "levels up High Card", 6),
-    "Magician's Red": TarotCard("Magician's Red", "levels up One Pair", 6),
-    "Star Platinum": TarotCard("Star Platinum", "levels up Two Pair", 6),
-    "Hierophant Green": TarotCard("Hierophant Green", "levels up Three of a Kind", 6),
-    "Justice": TarotCard("Justice", "levels up Straight", 6),
-    "Judgment": TarotCard("Judgment", "Creates a random Joker card", 6),
-    "The Fool": TarotCard("The Fool", "levels up Full House", 6),
-    "The Emperor": TarotCard("The Emperor", "levels up Four of a Kind", 6),
-    "The Hanged Man": TarotCard("The Hanged Man", "levels up all hands", 6),
-    "Death 13": TarotCard("Death 13", "levels up all hands", 6),
-    "The World": TarotCard("The World", "levels up all hands", 6)
+TAROTS = {
+    "Silver Chariot": TarotCard("Silver Chariot", "Enhances 1 selected card into a Steel Card", 3),
+    "Magician's Red": TarotCard("Magician's Red", "Enhances 2 selected cards into Lucky Cards", 3),
+    "Star Platinum": TarotCard("Star Platinum", "Converts up to 3 selected cards to Diamonds", 3),
+    "Hierophant Green": TarotCard("Hierophant Green", "Enhances 2 selected cards to Bonus Cards", 3),
+    "Justice": TarotCard("Justice", "Enhances 1 selected card into a Glass Card", 3),
+    "Judgment": TarotCard("Judgment", "Creates a random Joker card", 3),
+    "The Fool": TarotCard("The Fool", "Creates the last Tarot or Planet card used during this run (The Fool excluded)", 3),
+    "The Emperor": TarotCard("The Emperor", "Creates up to 2 random Tarot cards [Must have room]", 3),
+    "The Hanged Man": TarotCard("The Hanged Man", "Destroys up to 2 selected cards", 3),
+    "Death 13": TarotCard("Death 13", "Select 2 cards, convert the left card into the right card [Drag to rearrange]", 3),
+    "The World": TarotCard("The World", "Converts up to 3 selected cards to Spades", 3)
 }
