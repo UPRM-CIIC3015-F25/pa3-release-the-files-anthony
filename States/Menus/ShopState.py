@@ -71,7 +71,7 @@ class ShopState(State):
                 name = os.path.splitext(file)[0]
                 image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
                 key = name[6:]
-                # Attach image back into PLANETS and keep reference
+                # Attach image back into PLANETS and3 keep reference
                 if key in PLANETS:
                     PLANETS[key].image = image
                     self.planet_cards.append(PLANETS[key])
@@ -98,8 +98,8 @@ class ShopState(State):
     #   containing its "chips", "multiplier", and "level" fields.
     #   Remember: the Sun upgrades all hands, while other planets upgrade only their specific one.
     def activatePlanet(self, planet):
-        chip_bonus = planet.chips_bonus
-        mult_bonus = planet.multiplier_bonus
+        chip_bonus = planet.chips
+        mult_bonus = planet.mult
         keys = HAND_SCORES.keys()
 
         #debugging prints

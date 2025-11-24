@@ -28,16 +28,6 @@ class PlanetCard:
 #   Include all planets up to "Sun" to complete the set.
 #   These cards will be used in the shop and gameplay systems to upgrade specific poker hands.
 
-from dataclasses import dataclass
-
-@dataclass
-class PlanetCard:
-    name: str
-    description: str     # e.g., "levels up Two Pair"
-    price: int
-    chips_bonus: int
-    multiplier_bonus: int
-
 PLANETS = {
     "Mercury": PlanetCard("Mercury", "levels up High Card", 2, 10, 1),
     "Venus": PlanetCard("Venus", "levels up One Pair", 2, 15, 1),
