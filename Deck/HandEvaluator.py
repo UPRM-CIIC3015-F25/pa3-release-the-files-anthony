@@ -106,8 +106,9 @@ def evaluate_hand(hand: list[Card]):
     max_hand: str = ""
     max_hand_value: int = HAND_VALUES[max_hand]
     for play_hand in current_hands:
-        if HAND_VALUES[play_hand] > max_hand_value:
-            max_hand_value = HAND_VALUES[play_hand]
+        score_hand = "Straight Flush" if play_hand == "Royal Flush" else play_hand
+        if HAND_VALUES[score_hand] > max_hand_value:
+            max_hand_value = HAND_VALUES[score_hand]
             max_hand = play_hand
 
     # Return the final selection if something of the above
