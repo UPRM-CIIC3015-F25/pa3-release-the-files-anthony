@@ -951,7 +951,7 @@ class GameState(State):
         total_chips = hand_chips + card_chips_sum
 
         # ----------------- Apply Card Enhancements -----------------
-        # TODO (BONUS): Apply the effects for every card enhancement that influences scoring
+        # DONE (BONUS): Apply the effects for every card enhancement that influences scoring
         #   List of card enhancements that apply in scoring (above):
         #   - Bonus Cards: Give an additional +30 chips when scored
         #   - Mult Cards: Give an additional +4 Mult when scored
@@ -966,6 +966,7 @@ class GameState(State):
         #   - Gold Cards: Give $3 if held in hand AT THE END OF THE ROUND
         #   List of card enhancements that definitely go somewhere else
         #   - Wild Cards: Are considered of every suit simultaneously (HandEvaluator.py)
+        # TODO: Check if works
         # -----------------------------------------------------------------
 
         # ------------------ Effects for Held Cards ------------------------
@@ -1013,10 +1014,13 @@ class GameState(State):
 
         if "Fibonacci" in owned:
             funny_cards = [two, three, five, eight, ace]
+            used = False
             for card in self.cardsSelectedList:
                 if card.rank in funny_cards:
                     hand_mult += 8
-            self.activated_jokers.add("Fibonacci")
+                    used = True
+            if used:
+                self.activated_jokers.add("Fibonacci")
 
         if "Gauntlet" in owned:
             total_chips += 250
@@ -1045,11 +1049,13 @@ class GameState(State):
             self.activated_jokers.add("? Block")
 
         if "Hogwarts" in owned:
+            used = False
             for card in self.cardsSelectedList:
                 if card.rank == ace:
                     hand_mult += 4
                     total_chips += 20
-            self.activated_jokers.add("Hogwarts")
+            if used:
+                self.activated_jokers.add("Hogwarts")
 
         if "802" in owned:
             bonus_802 = True
