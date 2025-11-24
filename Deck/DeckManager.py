@@ -1,8 +1,14 @@
+from locale import locale_alias
+
 import pygame
 import random
+import os
 from Cards.Card import Suit, Rank, Card
 from Cards.Jokers import Jokers
 from Levels.SubLevel import SubLevel
+
+import Cards.Planets as Planets
+import Cards.Tarots as Tarots
 
 class DeckManager:
     def __init__(self):
@@ -137,13 +143,34 @@ class DeckManager:
 
         return jokers
 
+    # TODO: Consumable image loading
+    def loadConsumableImages(self) -> dict[str, Planets.PlanetCard|Tarots.TarotCard]:
+        """
+        Load Consumable sprites from the new 2x5 layout sheet and scale them
+        uniformly to the target height. Automatically adjusts slicing
+        to prevent out-of-bounds errors.
+        """
+
+        consumables = {}
+        for name in Planets.PLANETS:
+            if Planets.PLANETS[name].image != None:
+                consumables[name] = Planets.PLANETS[name].image
+            else:
+                continue
+        # for name in Tarots.TAROTS:
+        #      if Tarots.TAROTS[name].image != None:
+        #          consumables[name] = Tarots.TAROTS[name].image
+        #      else:
+        #          continue
+
+        return consumables
+
     # ---------- Deck creation ----------
     # DONE? (TASK 1): Implement a function that creates a full deck of Cards.
     #   Loop through all possible suits and ranks, retrieve the corresponding image
     #   from the card_images dictionary using (suit, rank) as the key, and create a Card
     #   object for each valid combination. If a matching image is not found, skip that card.
     #   Add each created Card to a list called 'deck' and return the completed list at the end.
-    # TODO: Check if works with rest of game
     def createDeck(self, subLevel: SubLevel = None):
         cardImages = self.load_card_images(subLevel)
         deck = []
@@ -182,6 +209,30 @@ class DeckManager:
             deckJokers.append(joker)
 
         return deckJokers
+
+    # TODO: Consumable Decks
+    def createConsumableDeck(self): # Creates a deck of jokers based on the loaded sprites
+        consumableImages = self.loadConsumableImages()
+        deckConsumables = []
+
+
+        for name, image in consumableImages.items():
+            price: int = 0
+            if name in Planets.PLANETS:
+                price = Planets.PLANETS[name].sellPrice()
+                consumable = Planets.PLANETS[name]
+            # elif name in Tarots.TAROTS: or smth idk lol
+            #     price = Tarots.TAROTS[name].sellPrice()
+            #     consumable = Tarots.TAROTS[name] or something
+            else:
+                continue
+
+            sellPrice = max(2, price // 2)
+
+            consumable.price = sellPrice
+            deckConsumables.append(consumable)
+
+        return deckConsumables
 
     # ---------- Utilities ----------
     def shuffleDeck(self, deck): # Shuffles any given deck of card or joker objects

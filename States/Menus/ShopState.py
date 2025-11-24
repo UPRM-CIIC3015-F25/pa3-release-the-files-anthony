@@ -76,6 +76,23 @@ class ShopState(State):
                     PLANETS[key].image = image
                     self.planet_cards.append(PLANETS[key])
 
+    # ---------- Load tarot art ----------
+    def loadTarots(self):
+        folder = "Graphics/cards/Tarots"
+        self.tarot_cards = []
+        if not os.path.exists(folder):
+            print("[ERROR] Tarot folder not found:", folder)
+            return
+        for file in os.listdir(folder):
+            if file.startswith("Tarot") and file.endswith(".png"):
+                name = os.path.splitext(file)[0]
+                image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
+                key = name[6:]
+                # TODO: Attach image back into TAROTS and3 keep reference
+                # if key in TAROTS:
+                #     TAROTS[key].image = image
+                #     self.planet_cards.append(TAROTS[key])
+
     # ---------- Descriptions ----------
     def _pretty_joker_description(self, joker_obj):
         desc_map = {

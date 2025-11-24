@@ -3,6 +3,8 @@ import random
 from States.Menus.DebugState import DebugState
 from States.Core.StateClass import State
 from Cards.Card import Suit, Rank, Enhancement
+from Cards.Planets import PLANETS
+# from Cards.Tarots import JOKERS
 from States.Core.PlayerInfo import PlayerInfo
 from Deck.HandEvaluator import evaluate_hand
 from Levels.SubLevel import Blind
@@ -34,8 +36,11 @@ class GameState(State):
         self.cards = {}
         
         self.jokerDeck = State.deckManager.createJokerDeck()
+        self.consumableDeck = State.deckManager.createConsumableDeck()
         self.playerJokers = []
+        self.playerConsumables = []
         self.jokers = {}
+        self.consumables = {}
         # track which jokers activated for the current played hand (used to offset their draw)
         self.activated_jokers = set()
         
@@ -104,6 +109,7 @@ class GameState(State):
         self.centerCardsSurface = pygame.Surface(self.centerCardsRect.size, pygame.SRCALPHA)
         self.deckContainer = pygame.Rect(380, 510, 680, 120)
         self.jokerContainer = pygame.Rect(380, 40, 340, 130)
+        self.consumableContainer = pygame.Rect(980, 40, 220, 130)
         self.pileContainer = pygame.Rect(1120, 550, 100, 140)
 
         # ----------------------------Sound Effects-------------------------------------------
@@ -181,6 +187,7 @@ class GameState(State):
             self.playerInfo.update()
             self.drawDeckPile()
             self.drawJokers()
+            self.drawConsumables()
             self.drawDeckContainer()
             self.screen.blit(self.tvOverlay,(0,0))
 
@@ -250,6 +257,7 @@ class GameState(State):
         self.drawCardsInHand()
         self.drawCenterCards()
         self.drawJokers()
+        self.drawConsumables()
         self.drawDeckPile()
         self.drawPlayerOptions()
         self.drawPlayedHandName()
@@ -361,6 +369,63 @@ class GameState(State):
         # count/title text (keeps old placement just under container)
         jokerTitleText = self.playerInfo.textFont1.render((str(len(self.playerJokers))) + "/ 2", True, 'white')
         self.screen.blit(jokerTitleText, (self.jokerContainer.x + 1, self.jokerContainer.y + self.jokerContainer.height + 0))
+
+    # TODO: Draw the consumable slot with really similar logic to drawJokers
+    def drawConsumables(self):
+        # Draw container background
+        consumableSurface = pygame.Surface(self.consumableContainer.size, pygame.SRCALPHA)
+        pygame.draw.rect(consumableSurface, (0, 0, 0, 120), consumableSurface.get_rect(), border_radius=6)
+        self.screen.blit(consumableSurface, self.consumableContainer.topleft)
+
+        # Build consumable objects list in the exact order of self.playerConsumables
+        player_consumable_objs = []
+        for name in self.playerConsumables:
+            for consum in self.consumableDeck:
+                if consum.name == name:
+                    player_consumable_objs.append(consum)
+                    break
+
+
+        self.consumables.clear()
+        n = max(1, len(player_consumable_objs))
+        inner_margin = 8
+        avail_w = self.consumableContainer.width - inner_margin * (n + 1)
+        slot_w = max(10, avail_w // n) if n > 0 else self.consumableContainer.width - inner_margin * 2
+        slot_h = self.consumableContainer.height - inner_margin * 2
+
+        for i, consum in enumerate(player_consumable_objs):
+            img = getattr(consum, "image", None)
+            if img is None:
+                continue
+
+            # Determine scale to fit slot height
+            target_h = slot_h
+            iw, ih = img.get_width(), img.get_height()
+            scale = 1.0
+            if ih > 0 and ih != target_h:
+                scale = target_h / ih
+            new_w = max(1, int(iw * scale))
+            new_h = max(1, int(ih * scale))
+            scaled = pygame.transform.scale(img, (new_w, new_h))
+            consum.scaled_image = scaled
+
+            # center the scaled image inside its slot
+            slot_x = self.consumableContainer.x + inner_margin + i * (slot_w + inner_margin)
+            slot_y = self.consumableContainer.y + inner_margin
+            # horizontally center within slot area
+            draw_x = slot_x + max(0, (slot_w - new_w) // 2)
+            draw_y = slot_y + max(0, (slot_h - new_h) // 2)
+
+            rect = pygame.Rect(draw_x, draw_y, new_w, new_h)
+            if self.playHandActive:  # TODO: looks nice and silly rn but may look unprofessional in production
+                rect = rect.move(0, 50)
+
+            self.consumables[consum] = rect
+            State.screen.blit(scaled, rect)
+
+        # count/title text (keeps old placement just under container)
+        consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ 2", True, 'white')
+        self.screen.blit(consumableTitleText, (self.consumableContainer.x + 1, self.consumableContainer.y + self.consumableContainer.height + 0))
 
     def drawDeckPile(self):
         pileContainer = pygame.Surface(self.pileContainer.size, pygame.SRCALPHA)
@@ -507,6 +572,8 @@ class GameState(State):
                     print("------------------------------------------------------------")
                     print(f"[JOKER] {joker_obj.name} — {desc_text}{extra}")
                     return
+
+            # TODO: Consumable click info
 
         # Pass input to playerInfo and debugState
         self.playerInfo.userInput(events)
