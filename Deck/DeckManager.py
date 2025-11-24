@@ -2,7 +2,6 @@ from locale import locale_alias
 
 import pygame
 import random
-import os
 from Cards.Card import Suit, Rank, Card
 from Cards.Jokers import Jokers
 from Levels.SubLevel import SubLevel
@@ -157,11 +156,11 @@ class DeckManager:
                 consumables[name] = Planets.PLANETS[name].image
             else:
                 continue
-        # for name in Tarots.TAROTS:
-        #      if Tarots.TAROTS[name].image != None:
-        #          consumables[name] = Tarots.TAROTS[name].image
-        #      else:
-        #          continue
+        for name in Tarots.TAROTS:
+             if Tarots.TAROTS[name].image != None:
+                 consumables[name] = Tarots.TAROTS[name].image
+             else:
+                 continue
 
         return consumables
 
@@ -221,9 +220,9 @@ class DeckManager:
             if name in Planets.PLANETS:
                 price = Planets.PLANETS[name].sellPrice()
                 consumable = Planets.PLANETS[name]
-            # elif name in Tarots.TAROTS: or smth idk lol
-            #     price = Tarots.TAROTS[name].sellPrice()
-            #     consumable = Tarots.TAROTS[name] or something
+            elif name in Tarots.TAROTS:
+                price = Tarots.TAROTS[name].sellPrice()
+                consumable = Tarots.TAROTS[name]
             else:
                 continue
 
