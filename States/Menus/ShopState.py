@@ -280,6 +280,7 @@ class ShopState(State):
                 pygame.draw.rect(self.screen, (70, 70, 70), inner)
             # draw jokers on top so they remain unaffected by the overlay
             self.game_state.drawJokers()
+            self.game_state.drawConsumables()
 
         # Draw sell confirmation (if any)
         self.drawSell()
@@ -423,11 +424,15 @@ class ShopState(State):
                     self.sell_rect = None
                     self.selected_info = None
                     return
+
                 joker_obj, _ = self.joker_for_sell
                 if joker_obj.name in self.game_state.playerJokers:
                     self.game_state.playerJokers.remove(joker_obj.name)
+                elif joker_obj.name in self.game_state.playerConsumables:
+                    self.game_state.playerConsumables.remove(joker_obj.name)
                 else:
                     print(f"[SHOP] sell: {joker_obj.name} not in playerJokers")
+
                 self.playerInfo.playerMoney += joker_obj.sellPrice()
                 self.buy_sound.play()
                 if joker_obj is not None and joker_obj.name in self.removed_offers:
@@ -471,7 +476,8 @@ class ShopState(State):
                     price = joker_obj.price
                 else:
                     price = None
-                if price is None or price < 4 or price == 12:
+                # Planet or Tarot card
+                if price is None or price < 4 or price == 12 and len(self.game_state.playerConsumables) < 2:
                     if price:
                         self.playerInfo.playerMoney -= price
                         self.buy_sound.play()
@@ -521,6 +527,8 @@ class ShopState(State):
             if self.game_state is not None:
                 if not self.game_state.jokers:
                     self.game_state.drawJokers()
+                if not self.game_state.consumables:
+                    self.game_state.drawConsumables()
                 for joker_obj, joker_rect in self.game_state.jokers.items():
                     if joker_rect.collidepoint(mousePos):
                         desc_text = self._pretty_joker_description(joker_obj)
@@ -544,8 +552,8 @@ class ShopState(State):
                         name = joker_obj.name
                         usable = True if isinstance(joker_obj, PlanetCard) else False
                         self.joker_for_sell = (joker_obj, joker_rect)
-                        self.selected_info = {'name': joker_obj.name, 'desc': desc_text, 'price': price,
-                                              'can_buy': False}
+                        self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
+                                              'can_buy': False, 'usable': usable}
                         return
 
             # Shop offers
