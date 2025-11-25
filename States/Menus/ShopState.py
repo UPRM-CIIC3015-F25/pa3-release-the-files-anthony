@@ -42,10 +42,12 @@ class ShopState(State):
 
         # --- State fields ---
         self.joker_for_sell = None  # (joker_obj, screen_rect)
+        self.joker_for_use = None  # (joker_obj, screen_rect)
         self.sell_rect = None  # screen-space sell button rect
         self.joker_for_buy = None  # (joker_obj_or_planet, screen_rect)
         self.buy_rect = None  # screen-space buy button rect
         self.buy_use_rect = None  # screen-space buy and use button rect
+        self.use_rect = None  # screen space for use button rect
         self.shop_random_joker_rects = []  # list[pygame.Rect] in screen coords
 
         self.selected_info = None
@@ -284,6 +286,8 @@ class ShopState(State):
 
         # Draw sell confirmation (if any)
         self.drawSell()
+        # Draw use symbol (if any)
+        self.drawUse()
 
     # ---------- Draw cards ----------
     def drawRandomJokers(self):
@@ -331,6 +335,24 @@ class ShopState(State):
         box_y = joker_rect.bottom + 6
         self.sell_rect = pygame.Rect(box_x, box_y, box_w, box_h)
         pygame.draw.rect(self.screen, (30, 200, 30), self.sell_rect, border_radius=6)
+        self.screen.blit(txt_surf, (box_x + pad_x, box_y + pad_y))
+
+    # ---- Use button (has duplicate in GameState) -----
+    def drawUse(self):
+        if not self.joker_for_use:
+            self.use_rect = None
+            return
+
+        joker_obj, joker_rect = self.joker_for_use
+        text = f"Use"
+        txt_surf = self.smallFont.render(text, True, (255, 255, 255))
+        pad_x, pad_y = 10, 6
+        box_w = txt_surf.get_width() + pad_x * 2
+        box_h = txt_surf.get_height() + pad_y * 3
+        box_x = joker_rect.centerx + 40
+        box_y = (joker_rect.bottom + 6) // 2
+        self.use_rect = pygame.Rect(box_x, box_y, box_w, box_h)
+        pygame.draw.rect(self.screen, (200, 0, 0), self.use_rect, border_radius=6)
         self.screen.blit(txt_surf, (box_x + pad_x, box_y + pad_y))
 
     # ---------- Pick random Jokers ----------
@@ -422,6 +444,7 @@ class ShopState(State):
                         self.joker_for_sell) < 1:
                     print("[SHOP] sell clicked but no joker selected")
                     self.sell_rect = None
+                    self.use_rect = None
                     self.selected_info = None
                     return
 
@@ -438,6 +461,7 @@ class ShopState(State):
                 if joker_obj is not None and joker_obj.name in self.removed_offers:
                     self.removed_offers.discard(joker_obj.name)
                 self.joker_for_sell = None
+                self.joker_for_use = None
                 self.selected_info = None
                 return
 
@@ -519,6 +543,32 @@ class ShopState(State):
                 self.selected_info = None
                 return
 
+            # Use
+            if self.use_rect and self.use_rect.collidepoint(mousePos):
+                if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
+                        self.joker_for_use) < 1:
+                    print("[SHOP] sell clicked but no joker selected")
+                    self.use_rect = None
+                    self.selected_info = None
+                    return
+                joker_obj, _ = self.joker_for_use
+                if joker_obj.name in self.game_state.playerConsumables:
+                    if joker_obj.name in PLANETS:
+                        joker_obj.activatePlanet(HAND_SCORES)
+                    if joker_obj.name in TAROTS:
+                        joker_obj.activateTarot() # TODO: add arguments to function
+                    self.game_state.playerConsumables.remove(joker_obj.name)
+                else:
+                    print(f"[SHOP] use: {joker_obj.name} not in playerJokers")
+
+                # TODO: if we make a use sound, play it here
+                if joker_obj is not None and joker_obj.name in self.removed_offers:
+                    self.removed_offers.discard(joker_obj.name)
+                self.joker_for_sell = None
+                self.joker_for_use = None
+                self.selected_info = None
+                return
+
             # Clear temporary selections; we'll set a new selection below
             self.joker_for_sell = None
             self.joker_for_buy = None
@@ -552,6 +602,7 @@ class ShopState(State):
                         name = joker_obj.name
                         usable = True if isinstance(joker_obj, PlanetCard) else False
                         self.joker_for_sell = (joker_obj, joker_rect)
+                        self.joker_for_use = (joker_obj, joker_rect) if usable else None
                         self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
                                               'can_buy': False, 'usable': usable}
                         return
