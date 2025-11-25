@@ -545,6 +545,7 @@ class ShopState(State):
 
             # Use
             if self.use_rect and self.use_rect.collidepoint(mousePos):
+                non_card_tarots = ["Judgement", "The Fool", "The Emperor"]
                 if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
                         self.joker_for_use) < 1:
                     print("[SHOP] sell clicked but no joker selected")
@@ -555,8 +556,8 @@ class ShopState(State):
                 if joker_obj.name in self.game_state.playerConsumables:
                     if joker_obj.name in PLANETS:
                         joker_obj.activatePlanet(HAND_SCORES)
-                    if joker_obj.name in TAROTS:
-                        joker_obj.activateTarot() # TODO: add arguments to function
+                    if joker_obj.name in TAROTS and joker_obj.name in non_card_tarots:
+                        joker_obj.activateTarot()
                     self.game_state.playerConsumables.remove(joker_obj.name)
                 else:
                     print(f"[SHOP] use: {joker_obj.name} not in playerJokers")
