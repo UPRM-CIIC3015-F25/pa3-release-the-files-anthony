@@ -12,13 +12,21 @@ class TarotCard:
     def sellPrice(self):
         return int(self.price * 0.6)
 
+    # TODO (BONUS): Give the cards selected (parameter: mutCardsSelected) the corresponding tarot card
+    #   effect. The tarot card is given by self.name, and isConsumed must be set to true.
+    #   HINT: I put in the mut thing to say that they're mutable. All properties must be given back to
+    #   the cards, except for the cases of Judgement, The Fool and The Emperor.
+    #   HINT 2: Google match statements, they make things easier in this case imo
+    def activateTarot(self, mutCardsSelected):
+        return NotImplementedError("Tag, you're it!")
+
 TAROTS = {
     "Silver Chariot": TarotCard("Silver Chariot", "Enhances 1 selected card into a Steel Card", 3),
     "Magician's Red": TarotCard("Magician's Red", "Enhances 2 selected cards into Lucky Cards", 3),
     "Star Platinum": TarotCard("Star Platinum", "Converts up to 3 selected cards to Diamonds", 3),
     "Hierophant Green": TarotCard("Hierophant Green", "Enhances 2 selected cards to Bonus Cards", 3),
     "Justice": TarotCard("Justice", "Enhances 1 selected card into a Glass Card", 3),
-    "Judgment": TarotCard("Judgment", "Creates a random Joker card", 3),
+    "Judgment": TarotCard("Judgment", "Creates a random Joker card (Must have room)", 3),
     "The Fool": TarotCard("The Fool", "Creates the last Tarot or Planet card used during this run (The Fool excluded)", 3),
     "The Emperor": TarotCard("The Emperor", "Creates up to 2 random Tarot cards [Must have room]", 3),
     "The Hanged Man": TarotCard("The Hanged Man", "Destroys up to 2 selected cards", 3),
