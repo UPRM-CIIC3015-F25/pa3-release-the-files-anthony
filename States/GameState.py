@@ -37,6 +37,7 @@ class GameState(State):
         
         self.jokerDeck = State.deckManager.createJokerDeck()
         self.consumableDeck = State.deckManager.createConsumableDeck()
+        State.deckManager.shuffleDeck(self.consumableDeck)
         self.playerJokers = []
         self.playerConsumables = []
         self.jokers = {}

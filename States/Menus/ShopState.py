@@ -68,19 +68,11 @@ class ShopState(State):
         else:
             self.selected_tarot = None
 
-        if self.selected_planet and self.selected_tarot:
-            self.selected_consumable = random.choice([self.selected_planet, self.selected_tarot])
-            if isinstance(self.selected_consumable, TarotCard):
-                self.selected_planet = None
-            elif isinstance(self.selected_consumable, PlanetCard):
-                self.selected_planet = None
-        else:
-            if self.selected_planet:
-                self.selected_consumable = self.selected_planet
-            elif self.selected_tarot:
-                self.selected_consumable = self.selected_tarot
-            else:
-                self.selected_consumable = None
+        self.selected_consumable = random.choice(self.game_state.consumableDeck)
+        if self.selected_consumable.name in PLANETS:
+            self.selected_tarot = None
+        elif self.selected_consumable.name in TAROTS:
+            self.selected_planet = None
 
         self.shop_random_jokers = []
         self.removed_offers = set()
@@ -114,7 +106,7 @@ class ShopState(State):
             if file.startswith("Tarot") and file.endswith(".png"):
                 name = os.path.splitext(file)[0]
                 image = pygame.image.load(os.path.join(folder, file)).convert_alpha()
-                key = name[6:]
+                key = name[5:]
                 # Attach image back into TAROTS and3 keep reference
                 if key in TAROTS:
                     TAROTS[key].image = image
@@ -298,11 +290,11 @@ class ShopState(State):
 
         display_cards = list(self.shop_random_jokers)
         for i, card in enumerate(display_cards):
-            # card can be a tuple (name, image), a PlanetCard, or a Jokers instance
+            # card can be a tuple (name, image), a PlanetCard, a TarotCard, or a Jokers instance
             img = None
             if isinstance(card, tuple):
                 img = card[1]
-            elif isinstance(card, PlanetCard) or isinstance(card, Jokers):
+            elif isinstance(card, PlanetCard) or isinstance(card, TarotCard) or isinstance(card, Jokers):
                 img = card.image
             else:
                 # unknown type; skip
@@ -366,6 +358,7 @@ class ShopState(State):
                 self.shop_random_jokers = []
             return
 
+        p = self.selected_consumable
         candidates = []
         for j in self.game_state.jokerDeck:
             if j.name in self.game_state.playerJokers:
@@ -375,7 +368,7 @@ class ShopState(State):
             if j.name in self.removed_offers:
                 continue
             candidates.append(j)
-        p = self.selected_consumable
+
         picks = []
         if len(candidates) >= 2:
             picks = random.sample(candidates, 2)
@@ -408,29 +401,11 @@ class ShopState(State):
                     self.playerInfo.playerMoney -= 3
                     self.pickTwoRandomJokers()
 
-                    if self.planet_cards:
-                        self.selected_planet = random.choice(self.planet_cards)
-                    else:
-                        self.selected_planet = None
-
-                    if self.tarot_cards:
-                        self.selected_tarot = random.choice(self.tarot_cards)
-                    else:
+                    self.selected_consumable = random.choice(self.game_state.consumableDeck)
+                    if self.selected_consumable.name in PLANETS:
                         self.selected_tarot = None
-
-                    if self.selected_planet and self.selected_tarot:
-                        self.selected_consumable = random.shuffle([self.selected_planet, self.selected_tarot])
-                        if isinstance(self.selected_consumable, TarotCard):
-                            self.selected_planet = None
-                        elif isinstance(self.selected_consumable, PlanetCard):
-                            self.selected_planet = None
-                    else:
-                        if self.selected_planet:
-                            self.selected_consumable = self.selected_planet
-                        elif self.selected_tarot:
-                            self.selected_consumable = self.selected_tarot
-                        else:
-                            self.selected_consumable = None
+                    elif self.selected_consumable.name in TAROTS:
+                        self.selected_planet = None
 
                     print("[SHOP] Rerolled new Jokers and Planet/Tarot.")
                 else:
