@@ -3,8 +3,8 @@ import random
 from States.Menus.DebugState import DebugState
 from States.Core.StateClass import State
 from Cards.Card import Suit, Rank, Enhancement
-from Cards.Planets import PLANETS
-# from Cards.Tarots import JOKERS
+from Cards.Planets import PLANETS, PlanetCard
+from Cards.Tarots import TAROTS, TarotCard
 from States.Core.PlayerInfo import PlayerInfo
 from Deck.HandEvaluator import evaluate_hand
 from Levels.SubLevel import Blind
@@ -69,6 +69,14 @@ class GameState(State):
         self.tvOverlay = pygame.image.load('Graphics/Backgrounds/CRT.png').convert_alpha()
         self.tvOverlay = pygame.transform.scale(self.tvOverlay, (1300, 750))
         # ----------------------------Player Options UI---------------------------------------
+
+        # -----------------------Player Joker/Consumable Manip -------------------------------
+        self.selected_info = None # Dictionary, information that you selected if you selected a joker or consumable
+
+        self.joker_for_sell = None  # (joker_obj, screen_rect)
+        self.joker_for_use = None  # (joker_obj, screen_rect)
+        self.sell_rect = None  # screen-space sell button rect
+        self.use_rect = None # screen space use button rect
 
         # ----------------------------Boss Theme & Background----------------------------
         # Use the music channel for background themes (main/boss) to avoid overlaps
@@ -262,6 +270,8 @@ class GameState(State):
         self.drawPlayerOptions()
         self.drawPlayedHandName()
         self.drawDeckPileOverlay()
+        self.drawUse()
+        # self.drawSell()
         self.screen.blit(self.tvOverlay, (0, 0))
 
     def switchToBossTheme(self):
@@ -370,7 +380,7 @@ class GameState(State):
         jokerTitleText = self.playerInfo.textFont1.render((str(len(self.playerJokers))) + "/ 2", True, 'white')
         self.screen.blit(jokerTitleText, (self.jokerContainer.x + 1, self.jokerContainer.y + self.jokerContainer.height + 0))
 
-    # TODO: Draw the consumable slot with really similar logic to drawJokers
+    # DONE: Draw the consumable slot with really similar logic to drawJokers
     def drawConsumables(self):
         # Draw container background
         consumableSurface = pygame.Surface(self.consumableContainer.size, pygame.SRCALPHA)
@@ -426,6 +436,24 @@ class GameState(State):
         # count/title text (keeps old placement just under container)
         consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ 2", True, 'white')
         self.screen.blit(consumableTitleText, (self.consumableContainer.x + 1, self.consumableContainer.y + self.consumableContainer.height + 0))
+
+    # ---- Use button (has duplicate in ShopState) -----
+    def drawUse(self):
+        if not self.joker_for_use:
+            self.use_rect = None
+            return
+
+        joker_obj, joker_rect = self.joker_for_use
+        text = f"Use"
+        txt_surf = self.playerInfo.textFont2.render(text, True, (255, 255, 255))
+        pad_x, pad_y = 10, 6
+        box_w = txt_surf.get_width() + pad_x * 2
+        box_h = txt_surf.get_height() + pad_y * 3
+        box_x = joker_rect.centerx + 40
+        box_y = (joker_rect.bottom + 6) // 2
+        self.use_rect = pygame.Rect(box_x, box_y, box_w, box_h)
+        pygame.draw.rect(self.screen, (200, 0, 0), self.use_rect, border_radius=6)
+        self.screen.blit(txt_surf, (box_x + pad_x, box_y + pad_y))
 
     def drawDeckPile(self):
         pileContainer = pygame.Surface(self.pileContainer.size, pygame.SRCALPHA)
@@ -573,7 +601,46 @@ class GameState(State):
                     print(f"[JOKER] {joker_obj.name} — {desc_text}{extra}")
                     return
 
+            # Use
+            if self.use_rect and self.use_rect.collidepoint(mousePos):
+                if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
+                        self.joker_for_use) < 1:
+                    print("[GAME] use clicked but no joker selected")
+                    self.use_rect = None
+                    self.selected_info = None
+                    return
+                joker_obj, _ = self.joker_for_use
+                if joker_obj.name in self.playerConsumables:
+                    if joker_obj.name in PLANETS:
+                        joker_obj.activatePlanet(HAND_SCORES)
+                    if joker_obj.name in TAROTS:
+                        joker_obj.activateTarot()
+                    self.playerConsumables.remove(joker_obj.name)
+                else:
+                    print(f"[GAME] use: {joker_obj.name} not in playerJokers")
+
+                # TODO: if we make a use sound, play it here
+                self.joker_for_sell = None
+                self.joker_for_use = None
+                self.selected_info = None
+                return
+
             # TODO: Consumable click info
+            # Owned consumables: check positions rendered by GameState
+            if not self.consumables:
+                self.drawConsumables()
+            for joker_obj, joker_rect in self.consumables.items():
+                if joker_rect.collidepoint(mousePos):
+                    desc_text = joker_obj.description
+                    price = joker_obj.price
+                    name = joker_obj.name
+                    usable = True if isinstance(joker_obj, PlanetCard) or \
+                                     (isinstance(joker_obj,TarotCard)) else False
+                    self.joker_for_sell = (joker_obj, joker_rect)
+                    self.joker_for_use = (joker_obj, joker_rect) if usable else None
+                    self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
+                                          'can_buy': False, 'usable': usable}
+                    return
 
         # Pass input to playerInfo and debugState
         self.playerInfo.userInput(events)

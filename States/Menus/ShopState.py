@@ -544,11 +544,11 @@ class ShopState(State):
                 return
 
             # Use
+            non_card_tarots = ["Judgement", "The Fool", "The Emperor"]
             if self.use_rect and self.use_rect.collidepoint(mousePos):
-                non_card_tarots = ["Judgement", "The Fool", "The Emperor"]
                 if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
                         self.joker_for_use) < 1:
-                    print("[SHOP] sell clicked but no joker selected")
+                    print("[SHOP] use clicked but no joker selected")
                     self.use_rect = None
                     self.selected_info = None
                     return
@@ -601,7 +601,9 @@ class ShopState(State):
                         desc_text = joker_obj.description
                         price = joker_obj.price
                         name = joker_obj.name
-                        usable = True if isinstance(joker_obj, PlanetCard) else False
+                        usable = True if isinstance(joker_obj, PlanetCard) or \
+                                         (isinstance(joker_obj, TarotCard) and joker_obj.name in non_card_tarots) \
+                                                                                                     else False
                         self.joker_for_sell = (joker_obj, joker_rect)
                         self.joker_for_use = (joker_obj, joker_rect) if usable else None
                         self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
