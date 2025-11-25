@@ -1,3 +1,5 @@
+from Cards.Card import Card
+
 class TarotCard:
     def __init__(self, name, description, price=6, image=None, isConsumed=False):
         self.name = name
@@ -17,7 +19,7 @@ class TarotCard:
     #   HINT: I put in the mut thing to say that they're mutable. All properties must be given back to
     #   the cards, except for the cases of Judgement, The Fool and The Emperor.
     #   HINT 2: Google match statements, they make things easier in this case imo
-    def activateTarot(self, mutCardsSelected):
+    def activateTarot(self, mutCardsSelected: list[Card]|None = None):
         return NotImplementedError("Tag, you're it!")
 
 TAROTS = {
