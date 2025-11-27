@@ -40,6 +40,8 @@ class Card:
         self.faceDown = False
         self.isSelected = False
         self.enhancement = enhancement
+        self.isDestroyed = False
+
 
         if rank.value <= 10: # Chip value based on rank
             self.chips = rank.value

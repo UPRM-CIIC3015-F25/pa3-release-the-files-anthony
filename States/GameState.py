@@ -44,6 +44,25 @@ class GameState(State):
         self.consumables = {}
         # track which jokers activated for the current played hand (used to offset their draw)
         self.activated_jokers = set()
+        self.card_usage_history = []
+
+        # Tarot card tests
+        test_tarots = ["Judgment", "The Emperor", "The Hanged Man"]
+        for tarot_name in test_tarots:
+            if tarot_name in TAROTS:
+                self.consumableDeck.append(TAROTS[tarot_name])
+
+        # Add to playerConsumables
+        self.playerConsumables.extend(test_tarots)
+
+        print("DEBUG: Player consumables:", self.playerConsumables)
+        print("DEBUG: Consumable deck has:", [c.name for c in self.consumableDeck])
+
+        #cool sounds
+        self.use_sound = pygame.mixer.Sound("Graphics/Sounds/rupee.wav")
+        self.use_sound.set_volume(1.0)
+        self.destroy_sound = pygame.mixer.Sound("Graphics/Sounds/thunder.wav")
+        self.destroy_sound.set_volume(1.0)
         
         # for joker in self.jokerDeck:
         #     print(joker.name)
@@ -604,6 +623,7 @@ class GameState(State):
 
             # Use
             if self.use_rect and self.use_rect.collidepoint(mousePos):
+                self.use_sound.play()
                 if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
                         self.joker_for_use) < 1:
                     print("[GAME] use clicked but no joker selected")
@@ -614,33 +634,76 @@ class GameState(State):
                 if joker_obj.name in self.playerConsumables:
                     if joker_obj.name in PLANETS:
                         joker_obj.activatePlanet(HAND_SCORES)
-                    if joker_obj.name in TAROTS:
-                        joker_obj.activateTarot()
-                    self.playerConsumables.remove(joker_obj.name)
-                else:
-                    print(f"[GAME] use: {joker_obj.name} not in playerJokers")
 
-                # TODO: if we make a use sound, play it here
+                    # Tarot activation and additional logic
+                    if joker_obj.name in TAROTS:
+                        requires_selection = joker_obj.name in [
+                            "Silver Chariot", "Magician's Red", "Hierophant Green", "Justice",
+                            "Star Platinum", "The World", "The Hanged Man", "Death 13"
+                        ]
+
+                        if requires_selection and not self.cardsSelectedList:
+                            print(f"Error: {joker_obj.name} requires selected cards but none were chosen!")
+                            return
+
+                        result = joker_obj.activateTarot(self.cardsSelectedList, self.hand)
+                        print(f"Tarot '{joker_obj.name}' activated with result: {result}")
+
+                        if result and "effect" in result:
+                            if result["effect"] == "create_joker":
+                                self.handleJudgmentEffect()
+                            elif result["effect"] == "create_tarots":
+                                self.handleEmperorEffect(result.get("count", 2))
+                            elif result["effect"] == "recreate_last_used":
+                                self.handleFoolEffect()
+
+                        if joker_obj.name in [
+                            "Star Platinum", "The World", "Death 13",
+                            "Silver Chariot", "Magician's Red", "Hierophant Green", "Justice"]:
+                            self.updateCardImages()
+                            self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+                        if joker_obj.name != "The Fool":
+                            self.card_usage_history.append(joker_obj.name)
+                            self.card_usage_history = self.card_usage_history[-10:]
+                            print(f"DEBUG: Added {joker_obj.name} to usage history")
+
+                        if result and "destroyed_cards" in result and result["destroyed_cards"]:
+                            self.destroy_sound.play()
+                            self.handleDestroyedCards(result)
+
+                        # Remove from inventory
+                    self.playerConsumables.remove(joker_obj.name)
+                    print(f"DEBUG: Removed {joker_obj.name} from playerConsumables")
+                    print(f"DEBUG: playerConsumables after removal: {self.playerConsumables}")
+                else:
+                    print(f"[GAME] use: {joker_obj.name} not in playerConsumables")
+                    print(f"DEBUG: Available consumables: {self.playerConsumables}")
+
                 self.joker_for_sell = None
                 self.joker_for_use = None
                 self.selected_info = None
                 return
 
+            # TODO: if we make a use sound, play it here
             # TODO: Consumable click info
             # Owned consumables: check positions rendered by GameState
             if not self.consumables:
                 self.drawConsumables()
-            for joker_obj, joker_rect in self.consumables.items():
-                if joker_rect.collidepoint(mousePos):
-                    desc_text = joker_obj.description
-                    price = joker_obj.price
-                    name = joker_obj.name
-                    usable = True if isinstance(joker_obj, PlanetCard) or \
-                                     (isinstance(joker_obj,TarotCard)) else False
-                    self.joker_for_sell = (joker_obj, joker_rect)
-                    self.joker_for_use = (joker_obj, joker_rect) if usable else None
-                    self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
-                                          'can_buy': False, 'usable': usable}
+            for consum_obj, consum_rect in self.consumables.items():
+                if consum_rect.collidepoint(mousePos):
+                    print(f"DEBUG: Clicked on consumable: {consum_obj.name}")
+                    print(f"DEBUG: Type: {type(consum_obj)}")
+                    desc_text = consum_obj.description
+                    price = consum_obj.price
+                    name = consum_obj.name
+                    usable = True if isinstance(consum_obj, PlanetCard) or (
+                        isinstance(consum_obj, TarotCard)) else False
+                    self.joker_for_sell = (consum_obj, consum_rect)
+                    self.joker_for_use = (consum_obj, consum_rect) if usable else None
+                    self.selected_info = {'name': name, 'desc': desc_text, 'price': price, 'can_buy': False,
+                                          'usable': usable}
+                    print(f"DEBUG: Set joker_for_use to: {self.joker_for_use[0].name if self.joker_for_use else None}")
                     return
 
         # Pass input to playerInfo and debugState
@@ -1167,6 +1230,132 @@ class GameState(State):
                     case Enhancement.GOLD:
                         self.playerInfo.playerMoney += 3
 
+    def handleDestroyedCards(self, result):
+        """Remove destroyed cards from hand and deck"""
+        destroyed_cards = []
+
+        # Check for different destruction formats
+        if "destroyed_cards" in result and result["destroyed_cards"]:
+            destroyed_cards.extend(result["destroyed_cards"])
+            print(f"DEBUG: Found {len(destroyed_cards)} destroyed cards in result")
+
+        if not destroyed_cards:
+            print("DEBUG: No destroyed cards found in result")
+            return
+
+        # Debug: print what cards we're trying to remove
+        print("DEBUG: Cards to destroy:")
+        for card in destroyed_cards:
+            print(
+                f"  - {card.rank.name} of {card.suit.value} (in hand: {card in self.hand}, in deck: {card in self.deck})")
+
+        cards_removed = []
+        for card in destroyed_cards:
+            if card in self.hand:
+                self.hand.remove(card)
+                cards_removed.append(f"{card.rank.name} of {card.suit.value}")
+                print(f"SUCCESS: Card {card.rank.name} of {card.suit.value} was destroyed and removed from hand")
+            elif card in self.deck:
+                self.deck.remove(card)
+                print(f"SUCCESS: Card {card.rank.name} of {card.suit.value} was destroyed and removed from deck")
+            else:
+                print(f"ERROR: Card {card.rank.name} of {card.suit.value} not found in hand or deck")
+
+        # Also remove from cardsSelectedList if they're there
+        for card in destroyed_cards:
+            if card in self.cardsSelectedList:
+                self.cardsSelectedList.remove(card)
+                print(f"DEBUG: Removed {card.rank.name} of {card.suit.value} from cardsSelectedList")
+
+        # Update the card display
+        self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+        if cards_removed:
+            print(f"SUCCESS: Destroyed and removed: {', '.join(cards_removed)}")
+            print(f"DEBUG: Hand now has {len(self.hand)} cards")
+        else:
+            print("ERROR: No cards were actually removed")
+
+    def updateCardImages(self):
+        """Force update all card images and redraw everything"""
+        print("DEBUG: Force updating all card images")
+
+        # Reload all card images
+        card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel())
+
+        # Update every card in hand
+        for card in self.hand:
+            key = (card.suit, card.rank)
+            if key in card_images:
+                card.image = card_images[key]
+                # Force recreate scaled image
+                original_w, original_h = card.image.get_size()
+                scaled_w = int(original_w * 1.2)
+                scaled_h = int(original_h * 1.2)
+                card.scaled_image = pygame.transform.scale(card.image, (scaled_w, scaled_h))
+
+        # Completely rebuild the cards dictionary
+        self.cards.clear()
+        self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+        print("DEBUG: Force update completed")
+
+    def handleJudgmentEffect(self):
+        """Handle Judgment tarot - create random joker"""
+        # Check if player has room for more jokers (max 5)
+        if len(self.playerJokers) < 5:
+            available_jokers = [j for j in self.jokerDeck if j.name not in self.playerJokers]
+            if available_jokers:
+                new_joker = random.choice(available_jokers)
+                self.playerJokers.append(new_joker.name)
+                # Update PlayerInfo display
+                self.playerInfo.curAmountJoker = str(len(self.playerJokers))
+                print(f"Judgment created: {new_joker.name}")
+            else:
+                print("Judgment: No available jokers to create")
+        else:
+            print("Judgment: No room for more jokers (max 5)")
+
+    def handleEmperorEffect(self, count=2):
+        """Handle The Emperor tarot - create random tarots"""
+        # Check available slots in player consumables (max 5)
+        available_slots = 5 - len(self.playerConsumables)
+
+        if available_slots > 0:
+            available_tarots = [t for t in TAROTS.values() if
+                                t.name not in self.playerConsumables and t.name != "The Emperor"]
+            num_to_create = min(available_slots, len(available_tarots), count)
+
+            created_tarots = []
+            for _ in range(num_to_create):
+                if available_tarots:
+                    new_tarot = random.choice(available_tarots)
+                    self.playerConsumables.append(new_tarot.name)
+                    created_tarots.append(new_tarot.name)
+                    available_tarots.remove(new_tarot)
+                    print(f"The Emperor created: {new_tarot.name}")
+
+            if created_tarots:
+                print(f"The Emperor created {len(created_tarots)} tarot(s)")
+            else:
+                print("The Emperor: No available tarots to create")
+        else:
+            print("The Emperor: No room for more consumables (max 5)")
+
+    def handleFoolEffect(self):
+        """Handle The Fool tarot - recreate last used tarot/planet"""
+        # Check available slots (max 5 consumables)
+        if len(self.playerConsumables) < 5:
+            # Find last used tarot or planet (excluding The Fool)
+            for card_name in reversed(self.card_usage_history):
+                if card_name != "The Fool" and (card_name in TAROTS or card_name in PLANETS):
+                    if card_name not in self.playerConsumables:
+                        self.playerConsumables.append(card_name)
+                        print(f"The Fool recreated: {card_name}")
+                        return
+            print("The Fool: No recent usable card found in history")
+        else:
+            print("The Fool: No room for more consumables (max 5)")
 
     # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been
@@ -1193,3 +1382,5 @@ class GameState(State):
         self.used = []
         self.SortCards(self.sorting)
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+

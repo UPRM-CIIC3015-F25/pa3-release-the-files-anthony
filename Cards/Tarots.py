@@ -1,4 +1,7 @@
-from Cards.Card import Card
+from Cards.Card import Card, Suit
+from Deck.HandEvaluator import Enhancments_fun, Enhancement
+
+
 
 class TarotCard:
     def __init__(self, name, description, price=6, image=None, isConsumed=False):
@@ -19,9 +22,86 @@ class TarotCard:
     #   HINT: I put in the mut thing to say that they're mutable. All properties must be given back to
     #   the cards, except for the cases of Judgement, The Fool and The Emperor.
     #   HINT 2: Google match statements, they make things easier in this case imo
-    def activateTarot(self, mutCardsSelected: list[Card]|None = None):
-        return NotImplementedError("Tag, you're it!")
+    def activateTarot(self, mutCardsSelected: list[Card] | None = None, player_hand: list[Card] | None = None):
+        if mutCardsSelected is None:
+            mutCardsSelected = []
 
+        print(f"Tarot: {self.name}")
+        print(f"Selected cards: {len(mutCardsSelected)}")
+        print(f"Player hand: {len(player_hand) if player_hand else 0}")
+
+        destroyed_cards = []
+
+        print("Before Tarot:", [(c.rank.name, c.suit.value, c.enhancement.name) for c in mutCardsSelected])
+        match self.name:
+            case "Silver Chariot":
+                if mutCardsSelected:
+                    mutCardsSelected[0].enhancement = Enhancement.STEEL
+
+            case "Magician's Red":
+                if mutCardsSelected:
+                    for c in mutCardsSelected[:2]:
+                        c.enhancement = Enhancement.LUCKY
+
+            case "Hierophant Green":
+                if mutCardsSelected:
+                    for c in mutCardsSelected[:2]:
+                        c.enhancement = Enhancement.BONUS
+
+            case "Justice":
+                if mutCardsSelected:
+                    mutCardsSelected[0].enhancement = Enhancement.GLASS
+
+            case "Star Platinum":
+                if mutCardsSelected:
+                    for c in mutCardsSelected[:3]:
+                        c.suit = Suit.DIAMONDS
+
+            case "The World":
+                if mutCardsSelected:
+                    for c in mutCardsSelected[:3]:
+                        c.suit = Suit.SPADES
+
+            case "The Hanged Man":
+                if mutCardsSelected:
+                    for c in mutCardsSelected[:2]:
+                        destroyed_cards.append(c)
+                        print(f"DEBUG: The Hanged Man destroying {c.rank.name} of {c.suit.value}")
+
+            case "Death 13":
+                if mutCardsSelected and len(mutCardsSelected) >= 2:
+                    left, right = mutCardsSelected[:2]
+                    left.suit = right.suit
+                    left.rank = right.rank
+                    left.enhancement = right.enhancement
+                    left.chips = right.chips
+
+            # SPECIAL TAROTS (no card mutation)
+            case "Judgment":
+                return {"effect": "create_joker"}
+
+            case "The Emperor":
+                return {"effect": "create_tarots", "count": 2}
+
+            case "The Fool":
+                return {"effect": "recreate_last_used"}
+
+            case _:
+                raise NotImplementedError(f"Tarot effect for {self.name} not implemented")
+
+        print("After Tarot:", [(c.rank.name, c.suit.value, c.enhancement.name) for c in mutCardsSelected])
+        self.isConsumed = True
+
+        if destroyed_cards:
+            return {"destroyed_cards": destroyed_cards}
+
+
+        if player_hand:
+            result = Enhancments_fun(player_hand)
+            print("Hand evaluation result:", result)
+            return result
+
+        return None
 TAROTS = {
     "Silver Chariot": TarotCard("Silver Chariot", "Enhances 1 selected card into a Steel Card", 3),
     "Magician's Red": TarotCard("Magician's Red", "Enhances 2 selected cards into Lucky Cards", 3),

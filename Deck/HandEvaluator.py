@@ -1,5 +1,6 @@
 from enum import Enum
 from Cards.Card import Card, Rank, Suit, Enhancement
+import random
 
 HAND_VALUES = {
     "Straight Flush": 9,
@@ -115,4 +116,52 @@ def evaluate_hand(hand: list[Card]):
     if max_hand != "":
         return max_hand
 
-    return "High Card" # If none of the above, it's High Card
+    return "High Card"
+
+def Enhancments_fun(hand: list[Card]):
+    destroyed = []
+    hand_type = evaluate_hand(hand)
+    total_chips = sum(c.chips for c in hand if c.enhancement != Enhancement.STONE)
+    mult = 1.0
+    cash = 0.0
+
+    for card in hand:
+        enh = card.enhancement
+
+        if enh == Enhancement.BONUS:
+            total_chips += 30
+
+        elif enh == Enhancement.MULT:
+            mult += 4
+
+        elif enh == Enhancement.GLASS:
+            mult *= 2
+            if random.random() < 0.25:
+                card.isDestroyed = True
+                destroyed.append(card)
+
+        elif enh == Enhancement.STEEL:
+            mult *= 1.5
+
+        elif enh == Enhancement.STONE:
+            total_chips += 50
+
+        elif enh == Enhancement.LUCKY:
+            if random.random() < 0.20:
+                mult += 20
+            if random.random() < 1 / 15:
+                cash += 20.0
+
+        elif enh == Enhancement.GOLD:
+            cash += 3.0
+
+    total_score = total_chips * mult
+
+    return {
+        "hand_type": hand_type,
+        "chips": total_chips,
+        "multiplier": mult,
+        "total_score": total_score,
+        "cash": cash,
+        "destroyed": destroyed
+    }
