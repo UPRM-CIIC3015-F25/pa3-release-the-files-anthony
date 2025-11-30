@@ -17,6 +17,10 @@ class PlayerInfo(State):
         self.round = 1                      # Current round
         self.curHandOfPlayer = ""           # Current hand of the player
         self.curAmountJoker = "0"           # Current number of jokers used
+        self.souls = 0                      # Yes, we adding dark souls in this bih (not quite... yet...)
+        self.reviveCost = 5                 # Souls needed to revive
+        self.canRevive = True               # Whether revive is available
+        self.hasRevivedThisBlind = False    # Tracks is you have revived
         
         # ----------------------------Level System--------------------------------------------
         self.levelManager = LevelManager(self)  # Must be after playerAnte is set ( DO NOT TOUCH THIS LINE )

@@ -45,6 +45,8 @@ class GameState(State):
         # track which jokers activated for the current played hand (used to offset their draw)
         self.activated_jokers = set()
         self.card_usage_history = []
+        # Game over flag
+        self.gameOverTriggered = False
 
         # Tarot card tests
         test_tarots = ["Judgment", "The Emperor", "The Hanged Man"]
@@ -54,6 +56,12 @@ class GameState(State):
 
         # Add to playerConsumables
         self.playerConsumables.extend(test_tarots)
+
+        # Soul logic
+        self.showReviveOption = False
+        self.dialogBoxRect = pygame.Rect(400, 300, 500, 200)
+        self.yesButtonRect = pygame.Rect(450, 400, 100, 50)
+        self.noButtonRect = pygame.Rect(650, 400, 100, 50)
 
         print("DEBUG: Player consumables:", self.playerConsumables)
         print("DEBUG: Consumable deck has:", [c.name for c in self.consumableDeck])
@@ -196,6 +204,10 @@ class GameState(State):
             # dont continue updating GameState
             return
 
+        if self.showReviveOption:
+            # Only update the debug state, nothing else
+            self.debugState.update()
+            return
         # Check if we need to reset deck (coming back from LevelSelectState)
         if self.deckManager.resetDeck:
             self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.next_unfinished_sublevel()))
@@ -219,6 +231,8 @@ class GameState(State):
             self.drawDeckContainer()
             self.screen.blit(self.tvOverlay,(0,0))
 
+            self.playerInfo.hasRevivedThisBlind = False
+
             State.screenshot = self.screen.copy()
             State.player_info = self.playerInfo
             self.isFinished = True
@@ -228,7 +242,7 @@ class GameState(State):
             self.nextState = "ShopState"
 
             return
-        
+
         # Handle boss level music switching
         bossName = self.playerInfo.levelManager.curSubLevel.bossLevel
         if bossName and not self.isBossActive:
@@ -244,8 +258,26 @@ class GameState(State):
             if curTime - self.playHandStartTime > self.playHandDuration:
                 # Commit pending round addition and reset displayed chips/multiplier
                 if getattr(self, "pending_round_add", 0) > 0:
+                    old_score = self.playerInfo.roundScore
                     self.playerInfo.roundScore += self.pending_round_add
+                    new_score = self.playerInfo.roundScore
+
+                    target_score = self.playerInfo.levelManager.curSubLevel.score
+                    if new_score > target_score and old_score <= target_score:
+                        print(f"DEBUG: Officially beat blind! {old_score} -> {new_score} > {target_score}")
+
+                        # Check if it's a boss blind
+                        current_blind = self.playerInfo.levelManager.curSubLevel.blind
+                        is_boss_blind = current_blind == Blind.BOSS
+
+                        if is_boss_blind:
+                            print("bigu bossu - OFFICIALLY BEAT BOSS BLIND!")
+                            boss_souls = 5
+                            self.playerInfo.souls += boss_souls
+                            print(f"BOSS DEFEATED! Earned {boss_souls} souls! Total: {self.playerInfo.souls}")
+
                     self.pending_round_add = 0
+
                 self.playerInfo.playerChips = 0
                 self.playerInfo.playerMultiplier = 0
 
@@ -279,6 +311,14 @@ class GameState(State):
         self.debugState.update()
 
     def draw(self):
+        # mess with this later (Change the bg to black)
+        if self.showReviveOption:
+            self.screen.fill((0, 0, 0))
+            tint = pygame.Surface((1300, 750), pygame.SRCALPHA)
+            tint.fill((255, 0, 0, 180))
+            self.screen.blit(tint, (0, 0))
+            self.drawGameOverScreen()
+            return
         # --- Call funcions ---
         self.playerInfo.update()
         self.drawDeckContainer()
@@ -292,6 +332,14 @@ class GameState(State):
         self.drawDeckPileOverlay()
         self.drawUse()
         # self.drawSell()
+
+        # DRAW SOUL DISPLAY
+        self.drawSoulDisplay()
+        if self.showRedTint and not self.showReviveOption:
+            tint = pygame.Surface((1300, 750), pygame.SRCALPHA)
+            tint.fill((255, 0, 0, 180))
+            self.screen.blit(tint, (0, 0))
+
         self.screen.blit(self.tvOverlay, (0, 0))
 
     def switchToBossTheme(self):
@@ -302,9 +350,9 @@ class GameState(State):
             pygame.mixer.music.set_volume(0.4)
             self.bossMusicPlaying = True
 
-    def switchToNormalTheme(self):
+    def switchToNormalTheme(self, force=False):
         # Restore the normal main theme on the music channel
-        if self.bossMusicPlaying:
+        if self.bossMusicPlaying or force:
             pygame.mixer.music.load("Graphics/Sounds/mainTheme.mp3")
             pygame.mixer.music.play(-1)
             pygame.mixer.music.set_volume(0.3)
@@ -475,6 +523,41 @@ class GameState(State):
         pygame.draw.rect(self.screen, (200, 0, 0), self.use_rect, border_radius=6)
         self.screen.blit(txt_surf, (box_x + pad_x, box_y + pad_y))
 
+    def drawSoulDisplay(self):
+        souls = getattr(self.playerInfo, 'souls', 0)
+
+        try:
+            soul_icon = pygame.image.load("Graphics/backgrounds/soul_icon.png").convert_alpha()
+            soul_icon = pygame.transform.scale(soul_icon, (60, 60))
+        except:
+            # Fallback to drawn icon if image not found
+            soul_icon = pygame.Surface((60, 60), pygame.SRCALPHA)
+            pygame.draw.circle(soul_icon, (200, 100, 255), (30, 30), 25)
+            pygame.draw.circle(soul_icon, (255, 255, 255), (30, 30), 15)
+
+        # Soul text
+        souls_label = self.playerInfo.textFont1.render("Souls:", True, (200, 200, 200))  # Gray label
+        souls_value = self.playerInfo.textFont1.render(f"{souls}", True, (255, 255, 255))  # White value
+
+        # Position in top-right corner
+        icon_x = 200  # Center position
+        icon_y = 300  # Under round score
+
+        # Calculate positions for label, value, and icon
+        label_x = icon_x - souls_value.get_width() - souls_label.get_width() - 10
+        label_y = icon_y + (75 - souls_label.get_height()) // 2
+
+        value_x = icon_x - souls_value.get_width() - 5
+        value_y = icon_y + (75 - souls_value.get_height()) // 2
+
+        icon_x = icon_x
+        icon_y = icon_y
+
+        # Draw label, value, and icon
+        self.screen.blit(souls_label, (label_x, label_y))
+        self.screen.blit(souls_value, (value_x, value_y))
+        self.screen.blit(soul_icon, (icon_x, icon_y))
+
     def drawDeckPile(self):
         pileContainer = pygame.Surface(self.pileContainer.size, pygame.SRCALPHA)
         pygame.draw.rect(pileContainer, (0, 0, 0, 120), pileContainer.get_rect())
@@ -568,6 +651,35 @@ class GameState(State):
     def userInput(self, events):
         mousePos = pygame.mouse.get_pos()
         mousePosPlayerOpcions = (mousePos[0] - self.playerOpcionsRect.x, mousePos[1] - self.playerOpcionsRect.y)
+
+        if events.type == pygame.MOUSEBUTTONDOWN:
+            mousePos = pygame.mouse.get_pos()
+
+            # Dialogue box logic
+            if self.showReviveOption:
+                if events.type == pygame.MOUSEBUTTONDOWN:
+                    print("DEBUG: Mouse click during game over")
+                    if self.noButtonRect.collidepoint(mousePos):
+                        print("DEBUG: No button clicked - going to StartState")
+                        self.showReviveOption = False
+                        self.showRedTint = False
+                        self.isFinished = True
+                        self.nextState = "StartState"
+                        self.playerInfo.amountOfHands = 4
+                        self.playerInfo.amountOfDiscards = 4
+                        self.switchToNormalTheme(force=True)
+                        return  # IMPORTANT: return immediately
+
+                    souls = getattr(self.playerInfo, 'souls', 0)
+                    revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
+                    has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
+
+                    if not has_revived and souls >= revive_cost:
+                        if self.yesButtonRect.collidepoint(mousePos):
+                            if self.handleRevive():
+                                return
+
+                return
 
         if events.type == pygame.QUIT:
             self.isFinished = True
@@ -879,9 +991,10 @@ class GameState(State):
     
     # -------- Play Hand Logic -----------
     def playHand(self):
-        if self.playerInfo.amountOfHands <= 0: # Check if last hand and failed the round
+        if self.playerInfo.amountOfHands <= 0:
             target_score = self.playerInfo.levelManager.curSubLevel.score
-            if self.playerInfo.roundScore < target_score:
+            if self.playerInfo.roundScore < target_score and not self.gameOverTriggered:
+                self.gameOverTriggered = True
                 pygame.mixer.music.stop()
                 self.gameOverSound.play()
                 self.showRedTint = True
@@ -896,7 +1009,13 @@ class GameState(State):
                     pygame.time.wait(80)
 
                 pygame.time.wait(1200)
-                pygame.quit()
+
+                self.showReviveOption = True
+                self.drawGameOverScreen()
+                self.draw()
+                return
+        else:
+            self.gameOverTriggered = False
 
         self.playerInfo.amountOfHands -= 1
         hand_name = evaluate_hand(self.cardsSelectedList)
@@ -1231,10 +1350,9 @@ class GameState(State):
                         self.playerInfo.playerMoney += 3
 
     def handleDestroyedCards(self, result):
-        """Remove destroyed cards from hand and deck"""
         destroyed_cards = []
 
-        # Check for different destruction formats
+        # Destroys them mfs
         if "destroyed_cards" in result and result["destroyed_cards"]:
             destroyed_cards.extend(result["destroyed_cards"])
             print(f"DEBUG: Found {len(destroyed_cards)} destroyed cards in result")
@@ -1243,11 +1361,9 @@ class GameState(State):
             print("DEBUG: No destroyed cards found in result")
             return
 
-        # Debug: print what cards we're trying to remove
         print("DEBUG: Cards to destroy:")
         for card in destroyed_cards:
-            print(
-                f"  - {card.rank.name} of {card.suit.value} (in hand: {card in self.hand}, in deck: {card in self.deck})")
+            print(f"  - {card.rank.name} of {card.suit.value} (in hand: {card in self.hand}, in deck: {card in self.deck})")
 
         cards_removed = []
         for card in destroyed_cards:
@@ -1261,13 +1377,11 @@ class GameState(State):
             else:
                 print(f"ERROR: Card {card.rank.name} of {card.suit.value} not found in hand or deck")
 
-        # Also remove from cardsSelectedList if they're there
         for card in destroyed_cards:
             if card in self.cardsSelectedList:
                 self.cardsSelectedList.remove(card)
                 print(f"DEBUG: Removed {card.rank.name} of {card.suit.value} from cardsSelectedList")
 
-        # Update the card display
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
         if cards_removed:
@@ -1277,24 +1391,19 @@ class GameState(State):
             print("ERROR: No cards were actually removed")
 
     def updateCardImages(self):
-        """Force update all card images and redraw everything"""
         print("DEBUG: Force updating all card images")
 
-        # Reload all card images
         card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel())
 
-        # Update every card in hand
         for card in self.hand:
             key = (card.suit, card.rank)
             if key in card_images:
                 card.image = card_images[key]
-                # Force recreate scaled image
                 original_w, original_h = card.image.get_size()
                 scaled_w = int(original_w * 1.2)
                 scaled_h = int(original_h * 1.2)
                 card.scaled_image = pygame.transform.scale(card.image, (scaled_w, scaled_h))
 
-        # Completely rebuild the cards dictionary
         self.cards.clear()
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
@@ -1317,13 +1426,10 @@ class GameState(State):
             print("Judgment: No room for more jokers (max 5)")
 
     def handleEmperorEffect(self, count=2):
-        """Handle The Emperor tarot - create random tarots"""
-        # Check available slots in player consumables (max 5)
-        available_slots = 5 - len(self.playerConsumables)
+        available_slots = 2 - len(self.playerConsumables)
 
         if available_slots > 0:
-            available_tarots = [t for t in TAROTS.values() if
-                                t.name not in self.playerConsumables and t.name != "The Emperor"]
+            available_tarots = [t for t in TAROTS.values() if t.name not in self.playerConsumables and t.name != "The Emperor"]
             num_to_create = min(available_slots, len(available_tarots), count)
 
             created_tarots = []
@@ -1343,10 +1449,7 @@ class GameState(State):
             print("The Emperor: No room for more consumables (max 5)")
 
     def handleFoolEffect(self):
-        """Handle The Fool tarot - recreate last used tarot/planet"""
-        # Check available slots (max 5 consumables)
-        if len(self.playerConsumables) < 5:
-            # Find last used tarot or planet (excluding The Fool)
+        if len(self.playerConsumables) < 2:
             for card_name in reversed(self.card_usage_history):
                 if card_name != "The Fool" and (card_name in TAROTS or card_name in PLANETS):
                     if card_name not in self.playerConsumables:
@@ -1357,12 +1460,96 @@ class GameState(State):
         else:
             print("The Fool: No room for more consumables (max 5)")
 
+    def drawGameOverScreen(self):
+       #Back ground, going change ts later
+        pygame.draw.rect(self.screen, (30, 30, 50), self.dialogBoxRect, border_radius=12)
+        pygame.draw.rect(self.screen, (80, 80, 100), self.dialogBoxRect, 3, border_radius=12)
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        souls = getattr(self.playerInfo, 'souls', 0)
+        revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
+        has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
+
+
+        if has_revived:
+            question_text = self.playerInfo.textFont2.render("Already revived this blind!", True, (255, 150, 150))
+            souls_text = self.playerInfo.textFont2.render("One revive per blind allowed", True, (200, 150, 150))
+        elif souls >= revive_cost:
+            question_text = self.playerInfo.textFont2.render(f"Revive for {revive_cost} Souls?", True, (255, 255, 255))
+            souls_text = self.playerInfo.textFont2.render(f"You have {souls} souls", True, (200, 200, 100))
+        else:
+            question_text = self.playerInfo.textFont2.render("Not enough souls to revive", True, (255, 150, 150))
+            souls_text = self.playerInfo.textFont2.render(f"Need {revive_cost}, you have {souls}", True, (200, 150, 150))
+        center_x = self.dialogBoxRect.centerx
+        buttons_y = self.dialogBoxRect.y + 120
+
+        self.yesButtonRect = pygame.Rect(center_x - 110, buttons_y, 100, 50)
+        self.noButtonRect = pygame.Rect(center_x + 10, buttons_y, 100, 50)
+
+
+        if not has_revived and souls >= revive_cost:
+            yes_color = (0, 200, 0) if self.yesButtonRect.collidepoint(mouse_pos) else (0, 100, 0)
+            pygame.draw.rect(self.screen, yes_color, self.yesButtonRect, border_radius=8)
+            yes_text = self.playerInfo.textFont2.render("YES", True, (255, 255, 255))
+            self.screen.blit(yes_text, (self.yesButtonRect.centerx - yes_text.get_width() // 2, self.yesButtonRect.centery - yes_text.get_height() // 2))
+
+        no_color = (200, 0, 0) if self.noButtonRect.collidepoint(mouse_pos) else (150, 0, 0)
+        pygame.draw.rect(self.screen, no_color, self.noButtonRect, border_radius=8)
+        no_text = self.playerInfo.textFont2.render("NO", True, (255, 255, 255))
+        self.screen.blit(no_text, (self.noButtonRect.centerx - no_text.get_width() // 2, self.noButtonRect.centery - no_text.get_height() // 2))
+
+        self.screen.blit(question_text,(self.dialogBoxRect.centerx - question_text.get_width() // 2, self.dialogBoxRect.y + 30))
+        self.screen.blit(souls_text,(self.dialogBoxRect.centerx - souls_text.get_width() // 2, self.dialogBoxRect.y + 70))
+
+        pygame.display.update()
+
+
+    def handleRevive(self):
+        souls = getattr(self.playerInfo, 'souls', 0)
+        revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
+        has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
+
+        print(f"DEBUG handleRevive: souls={souls}, cost={revive_cost}, has_revived={has_revived}")
+
+        # Check if player has enough souls AND hasn't revived this blind yet
+        if souls >= revive_cost and not has_revived:
+            self.gameOverTriggered = False
+            self.playerInfo.souls -= revive_cost
+            self.playerInfo.hasRevivedThisBlind = True  # Mark as revived for this blind
+            self.playerInfo.amountOfHands = 2
+            self.playerInfo.amountOfDiscards = 2
+            self.showReviveOption = False
+            self.showRedTint = False
+
+
+            self.draw()
+            pygame.display.update()
+
+            print("DEBUG: Resuming music after revive...")
+
+            if self.isBossActive:
+                print("DEBUG: Force playing boss music")
+                self.bossMusicPlaying = False
+                self.switchToBossTheme()
+            else:
+                print("DEBUG: Force playing normal music")
+                self.bossMusicPlaying = True
+                self.switchToNormalTheme()
+
+            print(f"Revived! {self.playerInfo.souls} souls remaining")
+            return True
+
+        print(f"DEBUG: Revive failed - souls: {souls}, cost: {revive_cost}, has_revived: {has_revived}")
+        return False
+
     # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been
     #   discarded, draw new cards to refill the hand back to 8 cards. Use helper functions but AVOID using
     #   iterations (no for/while loops) — the recursion itself must handle repetition. After the
     #   recursion finishes, reset card selections, clear any display text or tracking lists, and
     #   update the visual layout of the player's hand.
+
     def discardCards(self, removeFromHand: bool):
         if removeFromHand:  # Recursive cases
             if len(self.cardsSelectedList) > 0:  # If it isn't an empty hand, keep removing a card from the hand

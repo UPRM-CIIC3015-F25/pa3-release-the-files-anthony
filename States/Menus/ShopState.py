@@ -249,6 +249,7 @@ class ShopState(State):
         self.playerInfo.drawbuttons()
         self.screen.blit(self.playerInfo.leftRectSurface, self.playerInfo.leftRect.topleft)
         self.screen.blit(self.shopSurface, self.shopPos)
+        self.game_state.drawSoulDisplay()
 
         # Apply TV overlay for this state
         self.screen.blit(self.tvOverlay, (0, 0))
