@@ -891,7 +891,7 @@ class GameState(State):
                     extra = f" — Price: {price}$" if price is not None else ""
                     print("------------------------------------------------------------")
                     print(f"[JOKER] {joker_obj.name} — {desc_text}{extra}")
-                    return
+                    # Pass onto the sell area
 
             # Sell
             if self.sell_rect and self.sell_rect.collidepoint(mousePos):
@@ -987,7 +987,11 @@ class GameState(State):
             # Owned consumables: check positions rendered by GameState
             if not self.consumables:
                 self.drawConsumables()
-            for consum_obj, consum_rect in self.consumables.items():
+            if not self.jokers:
+                self.drawJokers()
+            joker_objects = self.consumables.copy()
+            joker_objects.update(self.jokers.copy())
+            for consum_obj, consum_rect in joker_objects.items():
                 if consum_rect.collidepoint(mousePos):
                     print(f"DEBUG: Clicked on consumable: {consum_obj.name}")
                     print(f"DEBUG: Type: {type(consum_obj)}")
@@ -1002,6 +1006,9 @@ class GameState(State):
                                           'usable': usable}
                     print(f"DEBUG: Set joker_for_use to: {self.joker_for_use[0].name if self.joker_for_use else None}")
                     return
+                else:
+                    self.joker_for_sell = None
+                    self.joker_for_use = None
 
         # Pass input to playerInfo and debugState
         self.playerInfo.userInput(events)

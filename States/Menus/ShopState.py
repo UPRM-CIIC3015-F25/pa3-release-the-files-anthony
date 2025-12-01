@@ -604,6 +604,9 @@ class ShopState(State):
                         self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
                                               'can_buy': False, 'usable': usable}
                         return
+                    else:
+                        self.joker_for_sell = None
+                        self.joker_for_use = None
 
             # Shop offers
             for idx, rect in enumerate(self.shop_random_joker_rects):
