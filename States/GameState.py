@@ -1811,24 +1811,24 @@ class GameState(State):
     #   iterations (no for/while loops) — the recursion itself must handle repetition. After the
     #   recursion finishes, reset card selections, clear any display text or tracking lists, and
     #   update the visual layout of the player's hand.
-
     def discardCards(self, removeFromHand: bool):
         if removeFromHand:  # Recursive cases
             if len(self.cardsSelectedList) > 0:  # If it isn't an empty hand, keep removing a card from the hand
-                self.hand.remove(self.cardsSelectedList.pop())
-                self.discardCards(True)
+                card_to_remove = self.cardsSelectedList.pop()
+                self.hand.remove(card_to_remove)
+                self.used.append(card_to_remove)
+                self.discardCards(removeFromHand=True)
 
             self.discardCards(False) # If the hand is now empty, go into the next part of the loop
 
         if len(self.hand) < 8:  # Alternate recursive case: fill the deck back up
             new_card = self.deck.pop()
             self.hand.append(new_card)
-            self.discardCards(False)
+            self.discardCards(removeFromHand=False)
 
         # Base case
         self.cardsSelectedRect = {}
         self.playedHandNameList = ['']
-        self.used = []
         self.SortCards(self.sorting)
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 

@@ -189,7 +189,7 @@ class DeckManager:
                 if key in ABBREVIATIONS:
                     TAROTS[ABBREVIATIONS[key]].image = image
 
-    # TODO: Consumable image loading
+    # DONE: Consumable image loading
     def loadConsumableImages(self) -> dict[str, Planets.PlanetCard|Tarots.TarotCard]:
         """
         Load Consumable sprites from the new 2x5 layout sheet and scale them
@@ -263,7 +263,7 @@ class DeckManager:
 
         return deckJokers
 
-    # TODO: Consumable Decks
+    # DONE: Consumable Decks
     def createConsumableDeck(self): # Creates a deck of jokers based on the loaded sprites
         consumableImages = self.loadConsumableImages()
         deckConsumables = []
