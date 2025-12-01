@@ -71,6 +71,8 @@ class GameState(State):
         self.use_sound.set_volume(1.0)
         self.destroy_sound = pygame.mixer.Sound("Graphics/Sounds/thunder.wav")
         self.destroy_sound.set_volume(1.0)
+        self.buy_sound = pygame.mixer.Sound("Graphics/Sounds/buySFX.wav")
+        self.buy_sound.set_volume(1.0)
         
         # for joker in self.jokerDeck:
         #     print(joker.name)
@@ -331,7 +333,7 @@ class GameState(State):
         self.drawPlayedHandName()
         self.drawDeckPileOverlay()
         self.drawUse()
-        # self.drawSell()
+        self.drawSell()
 
         # DRAW SOUL DISPLAY
         self.drawSoulDisplay()
@@ -504,6 +506,24 @@ class GameState(State):
         # count/title text (keeps old placement just under container)
         consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ 2", True, 'white')
         self.screen.blit(consumableTitleText, (self.consumableContainer.x + 1, self.consumableContainer.y + self.consumableContainer.height + 0))
+
+    # --- Sell button (has duplicate in ShopState) -----
+    def drawSell(self):
+        if not self.joker_for_sell:
+            self.sell_rect = None
+            return
+
+        joker_obj, joker_rect = self.joker_for_sell
+        text = f"Sell : {joker_obj.sellPrice()}$"
+        txt_surf = self.playerInfo.textFont2.render(text, True, (255, 255, 255))
+        pad_x, pad_y = 10, 6
+        box_w = txt_surf.get_width() + pad_x * 2
+        box_h = txt_surf.get_height() + pad_y * 2
+        box_x = joker_rect.centerx - box_w // 2
+        box_y = joker_rect.bottom + 6
+        self.sell_rect = pygame.Rect(box_x, box_y, box_w, box_h)
+        pygame.draw.rect(self.screen, (30, 200, 30), self.sell_rect, border_radius=6)
+        self.screen.blit(txt_surf, (box_x + pad_x, box_y + pad_y))
 
     # ---- Use button (has duplicate in ShopState) -----
     def drawUse(self):
@@ -733,6 +753,31 @@ class GameState(State):
                     print(f"[JOKER] {joker_obj.name} — {desc_text}{extra}")
                     return
 
+            # Sell
+            if self.sell_rect and self.sell_rect.collidepoint(mousePos):
+                if not self.joker_for_sell or not isinstance(self.joker_for_sell, tuple) or len(
+                        self.joker_for_sell) < 1:
+                    print("[GAME] sell clicked but no joker selected")
+                    self.sell_rect = None
+                    self.use_rect = None
+                    self.selected_info = None
+                    return
+
+                joker_obj, _ = self.joker_for_sell
+                if joker_obj.name in self.playerJokers:
+                    self.playerJokers.remove(joker_obj.name)
+                elif joker_obj.name in self.playerConsumables:
+                    self.playerConsumables.remove(joker_obj.name)
+                else:
+                    print(f"[GAME] sell: {joker_obj.name} not in playerJokers")
+
+                self.playerInfo.playerMoney += joker_obj.sellPrice()
+                self.buy_sound.play()
+                self.joker_for_sell = None
+                self.joker_for_use = None
+                self.selected_info = None
+                return
+
             # Use
             if self.use_rect and self.use_rect.collidepoint(mousePos):
                 self.use_sound.play()
@@ -744,11 +789,11 @@ class GameState(State):
                     return
                 joker_obj, _ = self.joker_for_use
                 if joker_obj.name in self.playerConsumables:
-                    if joker_obj.name in PLANETS:
+                    if joker_obj.name in PLANETS and isinstance(joker_obj, PlanetCard):
                         joker_obj.activatePlanet(HAND_SCORES)
 
                     # Tarot activation and additional logic
-                    if joker_obj.name in TAROTS:
+                    if joker_obj.name in TAROTS and isinstance(joker_obj, TarotCard):
                         requires_selection = joker_obj.name in [
                             "Silver Chariot", "Magician's Red", "Hierophant Green", "Justice",
                             "Star Platinum", "The World", "The Hanged Man", "Death 13"
