@@ -535,8 +535,8 @@ class GameState(State):
             draw_y = slot_y + max(0, (slot_h - new_h) // 2)
 
             rect = pygame.Rect(draw_x, draw_y, new_w, new_h)
-            if self.playHandActive:  # TODO: looks nice and silly rn but may look unprofessional in production
-                rect = rect.move(20, -50)
+            if self.playHandActive:
+                rect = rect.move(5, -10)
 
             self.consumables[consum] = rect
             State.screen.blit(scaled, rect)
