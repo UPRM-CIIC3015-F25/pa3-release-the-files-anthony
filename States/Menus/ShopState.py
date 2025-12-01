@@ -175,7 +175,7 @@ class ShopState(State):
             y += txt.get_height() + 4
 
         # Price + Buy button only when the selected item is a shop offer
-        # TODO (BONUS): Buy-and-use rect
+        # DONE (BONUS): Buy-and-use rect
         if price is not None and self.selected_info.get('can_buy', False):
             price_txt = self.smallFont.render(f"Price: {price}$", True, (255, 215, 0))
             self.shopSurface.blit(price_txt, (inner.x, y + 10))
@@ -486,8 +486,19 @@ class ShopState(State):
                     else:
                         print(f"[SHOP] buy: {joker_obj.name} not present when activating")
 
-                    if self.selected_planet and (self.buy_use_rect and self.buy_use_rect.collidepoint(mousePos)):
-                        joker_obj.activatePlanet(HAND_SCORES)
+                    valid_buy_use_tarots = {"The Emperor", "Judgment", "The Fool"}
+                    if (self.buy_use_rect and self.buy_use_rect.collidepoint(mousePos)):
+                        if isinstance(joker_obj, PlanetCard):
+                            joker_obj.activatePlanet(HAND_SCORES)
+                        if (isinstance(joker_obj, TarotCard) and joker_obj.name in valid_buy_use_tarots):
+                            result = joker_obj.activateTarot()
+                            if result and "effect" in result:
+                                if result["effect"] == "create_joker":
+                                    self.game_state.handleJudgmentEffect()
+                                elif result["effect"] == "create_tarots":
+                                    self.game_state.handleEmperorEffect(result.get("count", 2))
+                                elif result["effect"] == "recreate_last_used":
+                                    self.game_state.handleFoolEffect()
                     else:
                         self.game_state.playerConsumables.append(joker_obj.name)
                     # print(f"DEBUG: After activation - One Pair level: {HAND_SCORES['One Pair']['level']}")
@@ -520,7 +531,7 @@ class ShopState(State):
                 return
 
             # Use
-            non_card_tarots = ["Judgement", "The Fool", "The Emperor"]
+            valid_use_tarots = {"Judgment", "The Fool", "The Emperor"}
             if self.use_rect and self.use_rect.collidepoint(mousePos):
                 if not self.joker_for_use or not isinstance(self.joker_for_use, tuple) or len(
                         self.joker_for_use) < 1:
@@ -530,10 +541,17 @@ class ShopState(State):
                     return
                 joker_obj, _ = self.joker_for_use
                 if joker_obj.name in self.game_state.playerConsumables:
-                    if joker_obj.name in PLANETS:
+                    if (joker_obj.name in PLANETS) and isinstance(joker_obj, PlanetCard):
                         joker_obj.activatePlanet(HAND_SCORES)
-                    if joker_obj.name in TAROTS and joker_obj.name in non_card_tarots:
-                        joker_obj.activateTarot()
+                    elif (joker_obj.name in TAROTS) and (joker_obj.name in valid_use_tarots) and isinstance(joker_obj, TarotCard):
+                        result = joker_obj.activateTarot()
+                        if result and "effect" in result:
+                            if result["effect"] == "create_joker":
+                                self.game_state.handleJudgmentEffect()
+                            elif result["effect"] == "create_tarots":
+                                self.game_state.handleEmperorEffect(result.get("count", 2))
+                            elif result["effect"] == "recreate_last_used":
+                                self.game_state.handleFoolEffect()
                     self.game_state.playerConsumables.remove(joker_obj.name)
                 else:
                     print(f"[SHOP] use: {joker_obj.name} not in playerJokers")
@@ -579,7 +597,7 @@ class ShopState(State):
                         price = joker_obj.price
                         name = joker_obj.name
                         usable = True if isinstance(joker_obj, PlanetCard) or \
-                                         (isinstance(joker_obj, TarotCard) and joker_obj.name in non_card_tarots) \
+                                         (isinstance(joker_obj, TarotCard) and joker_obj.name in valid_use_tarots) \
                                                                                                      else False
                         self.joker_for_sell = (joker_obj, joker_rect)
                         self.joker_for_use = (joker_obj, joker_rect) if usable else None
