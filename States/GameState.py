@@ -73,7 +73,7 @@ class GameState(State):
         self.destroy_sound.set_volume(1.0)
         self.buy_sound = pygame.mixer.Sound("Graphics/Sounds/buySFX.wav")
         self.buy_sound.set_volume(1.0)
-        
+
         # for joker in self.jokerDeck:
         #     print(joker.name)
         
@@ -243,7 +243,34 @@ class GameState(State):
             self.playerInfo.amountOfHands = 4
             self.nextState = "ShopState"
 
+
+
+
             return
+
+        # Heat stuff
+        if self.playerInfo.isHeatActive:
+            # Reduce heat duration
+            self.playerInfo.heatDuration -= 1  # Assuming this runs ~60 times per second
+
+            # Check if heat duration expired
+            if self.playerInfo.heatDuration <= 0:
+                # Level down or deactivate heat
+                if self.playerInfo.heat_level > 1:
+                    self.playerInfo.heat_level -= 1
+                    print(f"HEAT LEVEL DOWN: Now at level {self.playerInfo.heat_level}")
+
+                    # Set new duration based on current level
+                    if self.playerInfo.heat_level == 2:
+                        self.playerInfo.heatDuration = 300  # 5 seconds at 60 FPS
+                    elif self.playerInfo.heat_level == 1:
+                        self.playerInfo.heatDuration = 300  # 5 seconds at 60 FPS
+                else:
+                    # Heat completely depleted
+                    self.playerInfo.heat_level = 0
+                    self.playerInfo.isHeatActive = False
+                    print("HEAT DEPLETED: Heat mode ended!")
+
 
         # Handle boss level music switching
         bossName = self.playerInfo.levelManager.curSubLevel.bossLevel
@@ -275,9 +302,19 @@ class GameState(State):
                         if is_boss_blind:
                             print("bigu bossu - OFFICIALLY BEAT BOSS BLIND!")
                             boss_souls = 5
+                            # More heat if you beat boss blind
+                            heat_gain = 50
                             self.playerInfo.souls += boss_souls
                             print(f"BOSS DEFEATED! Earned {boss_souls} souls! Total: {self.playerInfo.souls}")
+                        else:
+                            heat_gain = 25
 
+                        # Apply heat gain and check for level up
+                        self.playerInfo.heat = min(self.playerInfo.heat + heat_gain, self.playerInfo.max_heat)
+                        print(f"Heat gained! Current: {self.playerInfo.heat}/100 (Level {self.playerInfo.heat_level})")
+
+                        # Check if heat level should increase
+                        self.check_heat_level_up()
                     self.pending_round_add = 0
 
                 self.playerInfo.playerChips = 0
@@ -334,6 +371,7 @@ class GameState(State):
         self.drawDeckPileOverlay()
         self.drawUse()
         self.drawSell()
+        self.drawHeatDisplay()
 
         # DRAW SOUL DISPLAY
         self.drawSoulDisplay()
@@ -507,6 +545,66 @@ class GameState(State):
         consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ 2", True, 'white')
         self.screen.blit(consumableTitleText, (self.consumableContainer.x + 1, self.consumableContainer.y + self.consumableContainer.height + 0))
 
+    def drawHeatDisplay(self):
+        heat = self.playerInfo.heat
+        heat_level = self.playerInfo.heat_level
+        is_active = self.playerInfo.isHeatActive
+
+        # Heat bar background
+        bar_width = 200
+        bar_height = 20
+        bar_x = 750
+        bar_y = 50
+        color = (0,0,0)
+
+        pygame.draw.rect(self.screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
+
+        if is_active:
+            max_duration = 600 if heat_level == 3 else 300
+            fill_ratio = self.playerInfo.heatDuration / max_duration
+            fill_width = int(fill_ratio * bar_width)
+
+            if heat_level == 1:
+                color = (255, 100, 100)
+            elif heat_level == 2:
+                color = (255, 50, 50)
+            elif heat_level == 3:
+                color = (255, 0, 0)
+            else:
+                color = (100, 100, 100)
+
+            pygame.draw.rect(self.screen, color, (bar_x, bar_y, fill_width, bar_height))
+
+            seconds_remaining = max(0, self.playerInfo.heatDuration) // 60
+            time_text = self.playerInfo.textFont1.render(f"{seconds_remaining}s", True, (255, 255, 255))
+            self.screen.blit(time_text, (bar_x + bar_width + 10, bar_y))
+        else:
+            fill_width = int((heat / 100) * bar_width)
+
+            if heat_level == 0:
+                color = (100, 100, 100)
+            elif heat_level == 1:
+                color = (150, 50, 50)
+            elif heat_level == 2:
+                color = (200, 50, 50)
+            elif heat_level == 3:
+                color = (255, 50, 50)
+
+            pygame.draw.rect(self.screen, color, (bar_x, bar_y, fill_width, bar_height))
+
+            # Show heat percentage
+            percent_text = self.playerInfo.textFont1.render(f"{heat}%", True, (255, 255, 255))
+            self.screen.blit(percent_text, (bar_x + bar_width + 10, bar_y))
+
+        # Heat level text
+        level_text = self.playerInfo.textFont1.render(f"HEAT: {heat_level}", True, (255, 255, 255))
+        self.screen.blit(level_text, (bar_x, bar_y - 25))
+
+        # Active heat indicator
+        if is_active:
+            active_text = self.playerInfo.textFont1.render("HEAT ACTIVE!", True, (255, 255, 0))
+            self.screen.blit(active_text, (bar_x, bar_y + 25))
+
     # --- Sell button (has duplicate in ShopState) -----
     def drawSell(self):
         if not self.joker_for_sell:
@@ -672,6 +770,11 @@ class GameState(State):
         mousePos = pygame.mouse.get_pos()
         mousePosPlayerOpcions = (mousePos[0] - self.playerOpcionsRect.x, mousePos[1] - self.playerOpcionsRect.y)
 
+        # heat keybind
+        if events.type == pygame.KEYDOWN:
+            if events.key == pygame.K_h:  # Press H to activate heat
+                self.activateHeat()
+
         if events.type == pygame.MOUSEBUTTONDOWN:
             mousePos = pygame.mouse.get_pos()
 
@@ -683,12 +786,35 @@ class GameState(State):
                         print("DEBUG: No button clicked - going to StartState")
                         self.showReviveOption = False
                         self.showRedTint = False
-                        self.isFinished = True
-                        self.nextState = "StartState"
+                        self.gameOverTriggered = False
+
+                        # Reset all game state
                         self.playerInfo.amountOfHands = 4
                         self.playerInfo.amountOfDiscards = 4
+                        self.playerInfo.roundScore = 0
+                        self.playerInfo.playerChips = 0
+                        self.playerInfo.playerMultiplier = 0
+
+                        # reset blind
+                        if self.playerInfo.levelManager.curLevel:
+                            for sublevel in self.playerInfo.levelManager.curLevel:
+                                sublevel.finished = False
+                            self.playerInfo.levelManager.curSubLevel = self.playerInfo.levelManager.curLevel[0]
+
+                        # Reset deck and hand
+                        self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.curSubLevel))
+                        self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.curSubLevel)
+                        self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.next_unfinished_sublevel()))
+                        self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.next_unfinished_sublevel())
+                        self.used = []
+                        self.cardsSelectedList = []
+                        self.cardsSelectedRect = {}
+                        self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
+
+                        self.isFinished = True
+                        self.nextState = "StartState"
                         self.switchToNormalTheme(force=True)
-                        return  # IMPORTANT: return immediately
+                        return
 
                     souls = getattr(self.playerInfo, 'souls', 0)
                     revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
@@ -720,14 +846,28 @@ class GameState(State):
             if self.deck_button_rect.collidepoint(mousePos):
                 self.show_deck_pile = True
 
-            if self.discardButtonRect.collidepoint(mousePosPlayerOpcions):
-                if not self.playHandActive and len(self.cardsSelectedList) > 0 and self.playerInfo.amountOfDiscards > 0:
-                    self.discardCards(True)
-                    self.playerInfo.amountOfDiscards -= 1
 
+            # added heat logic here
             if self.playHandButtonRect.collidepoint(mousePosPlayerOpcions):
-                if not self.playHandActive and len(self.cardsSelectedList) > 0:
+                can_play_hand = (
+                        self.playerInfo.amountOfHands > 0 or
+                        self.playerInfo.amountOfHands == 0 or
+                        (self.playerInfo.isHeatActive and self.playerInfo.heat_level == 3)
+                )
+
+                if not self.playHandActive and len(self.cardsSelectedList) > 0 and can_play_hand:
                     self.playHand()
+
+            if self.discardButtonRect.collidepoint(mousePosPlayerOpcions):
+                can_discard = (
+                        self.playerInfo.amountOfDiscards > 0 or
+                        (self.playerInfo.isHeatActive and self.playerInfo.heat_level >= 2)
+                )
+
+                if not self.playHandActive and len(self.cardsSelectedList) > 0 and can_discard:
+                    if not (self.playerInfo.isHeatActive and self.playerInfo.heat_level >= 2) and self.playerInfo.amountOfDiscards > 0:
+                        self.playerInfo.amountOfDiscards -= 1
+                    self.discardCards(True)
 
             if self.sortRankRect.collidepoint(mousePosPlayerOpcions):
                 self.sorting = "rank"
@@ -1036,8 +1176,9 @@ class GameState(State):
     
     # -------- Play Hand Logic -----------
     def playHand(self):
-        if self.playerInfo.amountOfHands <= 0:
-            target_score = self.playerInfo.levelManager.curSubLevel.score
+        target_score = self.playerInfo.levelManager.curSubLevel.score
+        heat_play = self.playerInfo.isHeatActive and self.playerInfo.heat_level == 3
+        if self.playerInfo.amountOfHands <= 0 and not heat_play:
             if self.playerInfo.roundScore < target_score and not self.gameOverTriggered:
                 self.gameOverTriggered = True
                 pygame.mixer.music.stop()
@@ -1059,10 +1200,10 @@ class GameState(State):
                 self.drawGameOverScreen()
                 self.draw()
                 return
-        else:
-            self.gameOverTriggered = False
 
-        self.playerInfo.amountOfHands -= 1
+        if not (self.playerInfo.isHeatActive and self.playerInfo.heat_level == 3):
+            self.playerInfo.amountOfHands -= 1
+
         hand_name = evaluate_hand(self.cardsSelectedList)
         self.playedHandName = hand_name
         self.playedHandNameList.append(hand_name)
@@ -1356,6 +1497,26 @@ class GameState(State):
             bonus_802 = True
             self.activated_jokers.add("802")
 
+
+        # -------------------  HEAT EFFECTS  -------------------
+        if self.playerInfo.isHeatActive:
+            heat_level = self.playerInfo.heat_level
+
+            if heat_level == 1:
+                hand_mult *= 2
+                print("HEAT BONUS: 2x multiplier applied!")
+
+            elif heat_level == 2:
+                hand_mult = int(hand_mult * 1.2)
+                total_chips += 40
+                print("HEAT BONUS: 1.2x multiplier + 40 chips!")
+
+            elif heat_level == 3:
+                hand_mult = int(hand_mult * 1.8)
+                total_chips += 80
+                print("HEAT BONUS: 1.8x multiplier + 80 chips!")
+        # ---------------------------------------------------------------
+
         # ------------------ Finalize Hand Scoring ------------------
         # commit modified player multiplier and chips
         self.playerInfo.playerMultiplier = hand_mult
@@ -1471,7 +1632,7 @@ class GameState(State):
             print("Judgment: No room for more jokers (max 5)")
 
     def handleEmperorEffect(self, count=2):
-        available_slots = 2 - len(self.playerConsumables)
+        available_slots = 5 - len(self.playerConsumables)
 
         if available_slots > 0:
             available_tarots = [t for t in TAROTS.values() if t.name not in self.playerConsumables and t.name != "The Emperor"]
@@ -1494,7 +1655,7 @@ class GameState(State):
             print("The Emperor: No room for more consumables (max 5)")
 
     def handleFoolEffect(self):
-        if len(self.playerConsumables) < 2:
+        if len(self.playerConsumables) < 5:
             for card_name in reversed(self.card_usage_history):
                 if card_name != "The Fool" and (card_name in TAROTS or card_name in PLANETS):
                     if card_name not in self.playerConsumables:
@@ -1587,6 +1748,55 @@ class GameState(State):
 
         print(f"DEBUG: Revive failed - souls: {souls}, cost: {revive_cost}, has_revived: {has_revived}")
         return False
+
+
+    def activateHeat(self):
+        if self.playerInfo.heat_level > 0 and not self.playerInfo.isHeatActive:
+            self.playerInfo.isHeatActive = True
+            print(f"HEAT ACTIVATED: Level {self.playerInfo.heat_level}!")
+
+            if self.playerInfo.heat_level == 3:
+                self.playerInfo.heatDuration = 600
+                print("HEAT ACTIVATED: Unlimited hands and discards for 10 seconds!")
+            elif self.playerInfo.heat_level == 2:
+                self.playerInfo.heatDuration = 300
+                print("HEAT ACTIVATED: Unlimited discards for 5 seconds!")
+            elif self.playerInfo.heat_level == 1:
+                self.playerInfo.heatDuration = 300
+                print("HEAT ACTIVATED: 2x Multiplier for 5 seconds!")
+
+            self.playerInfo.heat = 0
+
+    def check_heat_level_up(self):
+        if self.playerInfo.heat >= 100 and self.playerInfo.heat_level < 3:
+            self.playerInfo.heat_level += 1
+            self.playerInfo.heat = 0
+            print(f"HEAT LEVEL UP! Now at level {self.playerInfo.heat_level}")
+
+            self.show_heat_level_up_effect()
+
+    def show_heat_level_up_effect(self):
+        for alpha in range(0, 100, 20):
+            flash = pygame.Surface((1300, 750), pygame.SRCALPHA)
+            flash.fill((255, 100, 100, alpha))
+            self.screen.blit(flash, (0, 0))
+            pygame.display.update()
+            pygame.time.wait(50)
+
+        # Show level up text
+        level_text = self.playerInfo.textFont1.render(f"HEAT LEVEL {self.playerInfo.heat_level}!", True, (255, 255, 0))
+        text_rect = level_text.get_rect(center=(650, 375))
+
+        # Background
+        bg_rect = text_rect.inflate(20, 10)
+        bg_surface = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(bg_surface, (0, 0, 0, 200), bg_surface.get_rect(), border_radius=8)
+
+        self.screen.blit(bg_surface, bg_rect)
+        self.screen.blit(level_text, text_rect)
+        pygame.display.update()
+        pygame.time.wait(1000)
+
 
     # DONE (TASK 4) - The function should remove one selected card from the player's hand at a time, calling itself
     #   again after each removal until no selected cards remain (base case). Once all cards have been

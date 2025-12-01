@@ -21,6 +21,13 @@ class PlayerInfo(State):
         self.reviveCost = 5                 # Souls needed to revive
         self.canRevive = True               # Whether revive is available
         self.hasRevivedThisBlind = False    # Tracks is you have revived
+        self.heat = 0                       # John Yakuzer
+        self.heat_level = 0
+        self.max_heat = 100
+        self.isHeatActive = False
+        self.heatDuration = 0
+
+
         
         # ----------------------------Level System--------------------------------------------
         self.levelManager = LevelManager(self)  # Must be after playerAnte is set ( DO NOT TOUCH THIS LINE )
