@@ -1240,10 +1240,10 @@ class GameState(State):
 
                 for i in range(len(text_surf_lines)):
                     surf_line = text_surf_lines[i]
-                    tooltip_surf.blit(surf_line, (padding, padding + (25 * i)))
+                    tooltip_surf.blit(surf_line, (padding, padding + (i * 25)))
 
                 tooltip_x = joker_rect.x + (joker_rect.width - tooltip_w) // 2
-                tooltip_y = joker_rect.y + tooltip_h + 10
+                tooltip_y = joker_rect.y + tooltip_h + 15
                 self.screen.blit(tooltip_surf, (tooltip_x, tooltip_y))
                 break
     
