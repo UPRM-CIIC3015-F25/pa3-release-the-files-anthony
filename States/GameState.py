@@ -438,6 +438,8 @@ class GameState(State):
 
     def drawJokers(self):
         # Draw container background
+        if self.showReviveOption:
+            return
         jokerSurface = pygame.Surface(self.jokerContainer.size, pygame.SRCALPHA)
         pygame.draw.rect(jokerSurface, (0, 0, 0, 120), jokerSurface.get_rect(), border_radius=6)
         self.screen.blit(jokerSurface, self.jokerContainer.topleft)
@@ -493,6 +495,8 @@ class GameState(State):
     # DONE: Draw the consumable slot with really similar logic to drawJokers
     def drawConsumables(self):
         # Draw container background
+        if self.showReviveOption:
+            return
         consumableSurface = pygame.Surface(self.consumableContainer.size, pygame.SRCALPHA)
         pygame.draw.rect(consumableSurface, (0, 0, 0, 120), consumableSurface.get_rect(), border_radius=6)
         self.screen.blit(consumableSurface, self.consumableContainer.topleft)
@@ -1185,6 +1189,9 @@ class GameState(State):
 
     # drawCardToolTip, but with only joker-style objects (Jokers and Consumables)
     def drawJokerTooltip(self):
+        if self.gameOverTriggered:
+            return
+
         mousePos = pygame.mouse.get_pos()
         joker_objects = self.jokers.copy()
         joker_objects.update(self.consumables)
