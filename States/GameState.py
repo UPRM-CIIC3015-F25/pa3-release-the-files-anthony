@@ -985,7 +985,7 @@ class GameState(State):
                 return
 
             # TODO: if we make a use sound, play it here
-            # TODO: Consumable click info
+            # -- Consumable click info --
             # Owned consumables: check positions rendered by GameState
             if not self.consumables:
                 self.drawConsumables()
@@ -993,24 +993,24 @@ class GameState(State):
                 self.drawJokers()
             joker_objects = self.consumables.copy()
             joker_objects.update(self.jokers.copy())
-            for consum_obj, consum_rect in joker_objects.items():
-                if consum_rect.collidepoint(mousePos):
-                    print(f"DEBUG: Clicked on consumable: {consum_obj.name}")
-                    print(f"DEBUG: Type: {type(consum_obj)}")
-                    desc_text = consum_obj.description
-                    price = consum_obj.price
-                    name = consum_obj.name
-                    usable = True if isinstance(consum_obj, PlanetCard) or (
-                        isinstance(consum_obj, TarotCard)) else False
-                    self.joker_for_sell = (consum_obj, consum_rect)
-                    self.joker_for_use = (consum_obj, consum_rect) if usable else None
+            for joker_obj, joker_rect in joker_objects.items():
+                if joker_rect.collidepoint(mousePos) and not (self.joker_for_sell or self.joker_for_use):
+                    # print(f"DEBUG: Clicked on joker/consumable: {joker_obj.name}")
+                    # print(f"DEBUG: Type: {type(joker_obj)}")
+                    desc_text = joker_obj.description
+                    price = joker_obj.price
+                    name = joker_obj.name
+                    usable = True if isinstance(joker_obj, PlanetCard) or (
+                        isinstance(joker_obj, TarotCard)) else False
+                    self.joker_for_sell = (joker_obj, joker_rect)
+                    self.joker_for_use = (joker_obj, joker_rect) if usable else None
                     self.selected_info = {'name': name, 'desc': desc_text, 'price': price, 'can_buy': False,
                                           'usable': usable}
-                    print(f"DEBUG: Set joker_for_use to: {self.joker_for_use[0].name if self.joker_for_use else None}")
+                    # print(f"DEBUG: Set joker_for_use to: {self.joker_for_use[0].name if self.joker_for_use else None}")
                     return
-                else:
-                    self.joker_for_sell = None
-                    self.joker_for_use = None
+            else:
+                self.joker_for_sell = None
+                self.joker_for_use = None
 
         # Pass input to playerInfo and debugState
         self.playerInfo.userInput(events)
@@ -1228,7 +1228,6 @@ class GameState(State):
                         total_height += cur_surf_line.get_height()
 
                         text_surf_lines.append(cur_surf_line)
-                        print(cur_tooltip_line)
                         cur_tooltip_line = next_tooltip_line
                         cur_id += 1
 

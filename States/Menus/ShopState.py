@@ -576,7 +576,7 @@ class ShopState(State):
                 if not self.game_state.consumables:
                     self.game_state.drawConsumables()
                 for joker_obj, joker_rect in self.game_state.jokers.items():
-                    if joker_rect.collidepoint(mousePos):
+                    if joker_rect.collidepoint(mousePos) and not (self.joker_for_sell or self.joker_for_use):
                         desc_text = self._pretty_joker_description(joker_obj)
                         if joker_obj is not None:
                             price = joker_obj.price
@@ -586,13 +586,15 @@ class ShopState(State):
                         self.selected_info = {'name': joker_obj.name, 'desc': desc_text, 'price': price,
                                               'can_buy': False}
                         return
+                else:
+                    self.joker_for_sell = None
 
             # Owned consumables: check positions rendered by GameState
             if self.game_state is not None:
                 if not self.game_state.consumables:
                     self.game_state.drawConsumables()
                 for joker_obj, joker_rect in self.game_state.consumables.items():
-                    if joker_rect.collidepoint(mousePos):
+                    if joker_rect.collidepoint(mousePos) and not (self.joker_for_sell or self.joker_for_use):
                         desc_text = joker_obj.description
                         price = joker_obj.price
                         name = joker_obj.name
@@ -604,9 +606,9 @@ class ShopState(State):
                         self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
                                               'can_buy': False, 'usable': usable}
                         return
-                    else:
-                        self.joker_for_sell = None
-                        self.joker_for_use = None
+                else:
+                    self.joker_for_sell = None
+                    self.joker_for_use = None
 
             # Shop offers
             for idx, rect in enumerate(self.shop_random_joker_rects):
