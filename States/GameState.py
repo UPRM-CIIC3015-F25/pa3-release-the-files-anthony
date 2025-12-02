@@ -3,6 +3,7 @@ import random
 from States.Menus.DebugState import DebugState
 from States.Core.StateClass import State
 from Cards.Card import Suit, Rank, Enhancement
+from Cards.Jokers import Jokers
 from Cards.Planets import PLANETS, PlanetCard
 from Cards.Tarots import TAROTS, TarotCard
 from States.Core.PlayerInfo import PlayerInfo
@@ -365,6 +366,7 @@ class GameState(State):
         self.drawCenterCards()
         self.drawJokers()
         self.drawConsumables()
+        self.drawJokerTooltip()
         self.drawDeckPile()
         self.drawPlayerOptions()
         self.drawPlayedHandName()
@@ -1178,6 +1180,71 @@ class GameState(State):
                 tooltip_surf.blit(text_surf, (padding, padding))
                 tooltip_x = rect.x + (rect.width - tooltip_w) // 2
                 tooltip_y = rect.y - tooltip_h - 10
+                self.screen.blit(tooltip_surf, (tooltip_x, tooltip_y))
+                break
+
+    # drawCardToolTip, but with only joker-style objects (Jokers and Consumables)
+    def drawJokerTooltip(self):
+        mousePos = pygame.mouse.get_pos()
+        joker_objects = self.jokers.copy()
+        joker_objects.update(self.consumables)
+        for joker_obj, joker_rect in joker_objects.items():
+            if joker_rect.collidepoint(mousePos) and \
+                    (isinstance(joker_obj, Jokers) or isinstance(joker_obj, PlanetCard) or isinstance(joker_obj, TarotCard)):
+
+                if isinstance(joker_obj, Jokers):
+                    tooltip_text = f"{joker_obj.name}\n{self._pretty_joker_description(joker_obj)}"
+                else:
+                    tooltip_text = f"{joker_obj.name}\n{joker_obj.description}"
+                font = self.playerInfo.textFont1
+                # If we made any boss blinds reliant on deactivating jokers those would go here
+
+                # - Text wrapping -
+                tooltip_wrap_char_amount = 20
+                cur_tooltip_line = ""
+                text_surf_lines = []
+                total_width = 0
+                total_height = 0
+                max_len, max_len_id, cur_id = 0, 0, 0
+                offset = 0
+                for i in range(len(tooltip_text)):
+                    char = tooltip_text[i]
+                    cur_tooltip_line += char if char != '\n' else ' '
+                    if ((char == '\n') and len(cur_tooltip_line) > 1) or (len(cur_tooltip_line) == tooltip_wrap_char_amount - 1)\
+                            or (i == len(tooltip_text) - 1):
+                        next_tooltip_line = ""
+                        if i != len(tooltip_text) - 1:
+                            for j in range(len(cur_tooltip_line)):
+                                if cur_tooltip_line[len(cur_tooltip_line) - j - 1] in {' ', '\n'}:
+                                    next_tooltip_line = cur_tooltip_line[(len(cur_tooltip_line) - j - 1):]
+                                    cur_tooltip_line = cur_tooltip_line[:len(cur_tooltip_line) - j - 1]
+                                    break
+
+                        if len(cur_tooltip_line) > max_len:
+                            max_len = len(cur_tooltip_line)
+                            max_len_id = cur_id
+
+                        cur_surf_line = font.render(cur_tooltip_line, False, 'white')
+                        total_height += cur_surf_line.get_height()
+
+                        text_surf_lines.append(cur_surf_line)
+                        print(cur_tooltip_line)
+                        cur_tooltip_line = next_tooltip_line
+                        cur_id += 1
+
+                total_width = text_surf_lines[max_len_id].get_width()
+
+                padding = 6
+                tooltip_w, tooltip_h = total_width + padding * 2, total_height + padding * 2
+                tooltip_surf = pygame.Surface((tooltip_w, tooltip_h), pygame.SRCALPHA)
+                pygame.draw.rect(tooltip_surf, (0, 0, 0, 180), tooltip_surf.get_rect(), border_radius=6)
+
+                for i in range(len(text_surf_lines)):
+                    surf_line = text_surf_lines[i]
+                    tooltip_surf.blit(surf_line, (padding, padding + (25 * i)))
+
+                tooltip_x = joker_rect.x + (joker_rect.width - tooltip_w) // 2
+                tooltip_y = joker_rect.y + tooltip_h + 10
                 self.screen.blit(tooltip_surf, (tooltip_x, tooltip_y))
                 break
     
