@@ -1265,6 +1265,10 @@ class GameState(State):
                 self.gameOverSound.play()
                 self.showRedTint = True
 
+                # Reset your souls after attempting to revive in the same blind again
+                if getattr(self.playerInfo, 'hasRevivedThisBlind', False):
+                    self.playerInfo.souls = 0
+
                 for alpha in range(0, 180, 10):
                     self.redAlpha = alpha
                     self.draw()
@@ -1273,6 +1277,7 @@ class GameState(State):
                     self.screen.blit(tint, (0, 0))
                     pygame.display.update()
                     pygame.time.wait(80)
+
 
                 pygame.time.wait(1200)
 
@@ -1825,6 +1830,10 @@ class GameState(State):
 
             print(f"Revived! {self.playerInfo.souls} souls remaining")
             return True
+
+        elif has_revived:
+            print("DEBUG: Already revived this blind - resetting souls to zero")
+            self.playerInfo.souls = 0
 
         print(f"DEBUG: Revive failed - souls: {souls}, cost: {revive_cost}, has_revived: {has_revived}")
         return False
