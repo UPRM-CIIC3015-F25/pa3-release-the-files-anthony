@@ -3,7 +3,7 @@ from locale import locale_alias
 import pygame
 import random
 import os
-from Cards.Card import Suit, Rank, Card
+from Cards.Card import Suit, Rank, Card, Enhancement
 from Cards.Jokers import Jokers
 from Cards.Planets import PLANETS
 from Cards.Tarots import TAROTS
@@ -23,7 +23,7 @@ class DeckManager:
             "Fibonacci", "Michael Myers", "? Block", "Hogwarts", "Straw Hat",
             "802", "Ogre", "Hog Rider", "Gauntlet", "The Joker"
         ]
-        self.sheet = None
+        self.sheets = None
     # ---------- Helpers ----------
     def _scaleToHeightIntegerish(self, surf: pygame.Surface, targetH: int) -> pygame.Surface:
         h = surf.get_height()
@@ -67,9 +67,15 @@ class DeckManager:
 
     # ---------- Loading ----------
     def preload_card_images(self):
-        self.sheet = pygame.image.load('Graphics/Cards/Poker_Sprites.png').convert_alpha()
+        self.sheets = {
+            Enhancement.BASIC.value: pygame.image.load('Graphics/Cards/Poker_Sprites.png').convert_alpha(),
+            Enhancement.BONUS.value: pygame.image.load('Graphics/Cards/Poker_Sprites_Bonus.png').convert_alpha(),
+            Enhancement.GLASS.value: pygame.image.load('Graphics/Cards/Poker_Sprites_Glass.png').convert_alpha(),
+            Enhancement.STEEL.value: pygame.image.load('Graphics/Cards/Poker_Sprites_Steel.png').convert_alpha(),
+            Enhancement.LUCKY.value: pygame.image.load('Graphics/Cards/Poker_Sprites_Lucky.png').convert_alpha()
+        }
 
-    def load_card_images(self, subLevel: SubLevel = None):
+    def load_card_images(self, subLevel: SubLevel = None, enhancedCards: list[tuple[Enhancement, tuple[Suit, Rank]]]|None = None):
         """
         Load 52 card faces at their original resolution (70x94),
         optionally applying 'The Mark' modifications if the boss requires it.
@@ -79,7 +85,8 @@ class DeckManager:
             - Check the enhancement of the card
                 > From that, decide which spritesheet to pull from
         """
-        sheet = self.sheet
+        # Sheet must be basic for faces drawn by the Mark, as that doesn't let you see your enhancements
+        sheet = self.sheets[Enhancement.BASIC.value]
 
         cardImages = {}
         useMark = False
@@ -98,6 +105,12 @@ class DeckManager:
                 Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN,
                 Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE
             ], start=1):
+                if enhancedCards:
+                    sheet = self.sheets[Enhancement.BASIC.value]
+                    for enhancement, (e_suit, e_rank) in enhancedCards:
+                        if (suit, rank) == (e_suit, e_rank):
+                            sheet = self.sheets[enhancement.value]
+
                 x = colIdx * self.srcCardW
                 y = suitIdx * self.srcCardH
                 cell = sheet.subsurface(pygame.Rect(x, y, self.srcCardW, self.srcCardH)).copy()
@@ -106,7 +119,6 @@ class DeckManager:
                     cell = markFace.copy()
 
                 cardImages[(suit, rank)] = cell
-
         return cardImages
 
     def loadJokerImages(self):

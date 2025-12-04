@@ -50,5 +50,9 @@ class Card:
         else:  # Ace
             self.chips = 11
 
+    def update_enhancement(self, enhancement: Enhancement) -> tuple[Suit, Rank]:
+        self.enhancement = enhancement
+        return self.suit, self.rank
+
     def __str__(self): # Formated string of the card (Example: Ace♠)
         return f"{self.rank.name.capitalize()}{self.suit.value}"

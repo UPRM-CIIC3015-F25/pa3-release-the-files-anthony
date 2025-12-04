@@ -46,11 +46,13 @@ class GameState(State):
         # track which jokers activated for the current played hand (used to offset their draw)
         self.activated_jokers = set()
         self.card_usage_history = []
+        # Keep track of the enhanced cards
+        self.enhanced_cards = []
         # Game over flag
         self.gameOverTriggered = False
 
         # Tarot card tests
-        test_tarots = ["Judgment", "The Emperor", "The Hanged Man"]
+        test_tarots = ["Judgment", "The Emperor", "The Hanged Man", "Hierophant Green"]
         for tarot_name in test_tarots:
             if tarot_name in TAROTS:
                 self.consumableDeck.append(TAROTS[tarot_name])
@@ -741,10 +743,12 @@ class GameState(State):
             overlay = pygame.Surface((1300, 750), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
             self.screen.blit(overlay, (0, 0))
-            card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel())
+            card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel(), self.enhanced_cards)
             suits = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]
             ranks = [Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN,
                      Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING]
+            enhancements = [Enhancement.BASIC, Enhancement.BONUS, Enhancement.GLASS, Enhancement.STEEL,
+                            Enhancement.LUCKY]
             start_x, start_y = 100, 100
             spacing_x, spacing_y = 75, 100
 
@@ -764,7 +768,7 @@ class GameState(State):
                         y = start_y + row * spacing_y
                         self.screen.blit(img, (x,y))
 
-                    if (suit, rank)  in unusable: #or (suit, rank) in deck_selected:
+                    if (suit, rank) in unusable: #or (suit, rank) in deck_selected:
                         rect = pygame.Rect(start_x + col * spacing_x, start_y + row * spacing_y, img.get_width(), img.get_height())
                         self.gray_overlay_(self.screen, rect)
 
@@ -974,6 +978,17 @@ class GameState(State):
                         if result and "destroyed_cards" in result and result["destroyed_cards"]:
                             self.destroy_sound.play()
                             self.handleDestroyedCards(result)
+                        if (result) and ("enhanced_cards" in result) and (result["enhanced_cards"]):
+                            for e_enhancement, (e_suit, e_rank) in result["enhanced_cards"]:
+                                for s_enhancement, (s_suit, s_rank) in self.enhanced_cards:
+                                    if (e_suit, e_rank) == (s_suit, s_rank):
+                                        self.enhanced_cards.remove((s_enhancement, (s_rank, s_suit)))
+                                        break
+                                else:
+                                    self.enhanced_cards += result["enhanced_cards"]
+                            self.use_sound.play()
+                            self.updateCardImages()
+                            self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
                         # Remove from inventory
                     self.playerConsumables.remove(joker_obj.name)
@@ -1684,7 +1699,7 @@ class GameState(State):
     def updateCardImages(self):
         print("DEBUG: Force updating all card images")
 
-        card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel())
+        card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel(), self.enhanced_cards)
 
         for card in self.hand:
             key = (card.suit, card.rank)

@@ -31,26 +31,29 @@ class TarotCard:
         print(f"Player hand: {len(player_hand) if player_hand else 0}")
 
         destroyed_cards = []
+        enhanced_cards = []
 
         print("Before Tarot:", [(c.rank.name, c.suit.value, c.enhancement.name) for c in mutCardsSelected])
         match self.name:
             case "Silver Chariot":
                 if mutCardsSelected:
-                    mutCardsSelected[0].enhancement = Enhancement.STEEL
+                    c = mutCardsSelected[0]
+                    enhanced_cards.append((Enhancement.STEEL, c.update_enhancement(Enhancement.STEEL)))
 
             case "Magician's Red":
                 if mutCardsSelected:
                     for c in mutCardsSelected[:2]:
-                        c.enhancement = Enhancement.LUCKY
+                       enhanced_cards.append((Enhancement.LUCKY, c.update_enhancement(Enhancement.LUCKY)))
 
             case "Hierophant Green":
                 if mutCardsSelected:
                     for c in mutCardsSelected[:2]:
-                        c.enhancement = Enhancement.BONUS
+                        enhanced_cards.append((Enhancement.BONUS, c.update_enhancement(Enhancement.BONUS)))
 
             case "Justice":
                 if mutCardsSelected:
-                    mutCardsSelected[0].enhancement = Enhancement.GLASS
+                    c = mutCardsSelected[0]
+                    enhanced_cards.append((Enhancement.GLASS, c.update_enhancement(Enhancement.GLASS)))
 
             case "Star Platinum":
                 if mutCardsSelected:
@@ -94,6 +97,9 @@ class TarotCard:
 
         if destroyed_cards:
             return {"destroyed_cards": destroyed_cards}
+
+        if enhanced_cards:
+            return {"enhanced_cards": enhanced_cards}
 
 
         if player_hand:
