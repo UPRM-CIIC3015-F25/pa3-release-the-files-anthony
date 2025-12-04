@@ -369,11 +369,11 @@ class GameState(State):
         self.drawJokers()
         self.drawConsumables()
         self.drawJokerTooltip()
+        self.drawUse()
+        self.drawSell()
         self.drawDeckPile()
         self.drawPlayerOptions()
         self.drawPlayedHandName()
-        self.drawUse()
-        self.drawSell()
         self.drawHeatDisplay()
 
         # DRAW SOUL DISPLAY
@@ -383,6 +383,7 @@ class GameState(State):
             tint.fill((255, 0, 0, 180))
             self.screen.blit(tint, (0, 0))
 
+        # Top level
         self.drawDeckPileOverlay()
 
         self.screen.blit(self.tvOverlay, (0, 0))
