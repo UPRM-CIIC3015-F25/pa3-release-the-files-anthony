@@ -79,9 +79,8 @@ class DeckManager:
         """
         Load 52 card faces at their original resolution (70x94),
         optionally applying 'The Mark' modifications if the boss requires it.
-        TODO (BONUS): include in this the logic necessary for card enhancements.
+        DONE (BONUS): include in this the logic necessary for card enhancements.
             - Load all possible sprite groups
-                > Check if their dimensions match. Return an error if not bc that's a development thing
             - Check the enhancement of the card
                 > From that, decide which spritesheet to pull from
         """

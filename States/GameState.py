@@ -982,10 +982,12 @@ class GameState(State):
                             for e_enhancement, (e_suit, e_rank) in result["enhanced_cards"]:
                                 for s_enhancement, (s_suit, s_rank) in self.enhanced_cards:
                                     if (e_suit, e_rank) == (s_suit, s_rank):
-                                        self.enhanced_cards.remove((s_enhancement, (s_rank, s_suit)))
-                                        break
-                                else:
-                                    self.enhanced_cards += result["enhanced_cards"]
+                                        print((s_enhancement, (s_rank, s_suit)))
+                                        print((e_enhancement, (e_rank, e_suit)))
+                                        self.enhanced_cards.remove((e_enhancement, (s_rank, s_suit)))
+
+                            self.enhanced_cards += result["enhanced_cards"]
+
                             self.use_sound.play()
                             self.updateCardImages()
                             self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
