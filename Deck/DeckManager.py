@@ -75,7 +75,7 @@ class DeckManager:
             Enhancement.LUCKY.value: pygame.image.load('Graphics/Cards/Poker_Sprites_Lucky.png').convert_alpha()
         }
 
-    def load_card_images(self, subLevel: SubLevel = None, enhancedCards: list[tuple[Enhancement, tuple[Suit, Rank]]]|None = None):
+    def load_card_images(self, subLevel: SubLevel = None, enhancedCards: list[tuple[Enhancement, Card]]|None = None):
         """
         Load 52 card faces at their original resolution (70x94),
         optionally applying 'The Mark' modifications if the boss requires it.
@@ -106,7 +106,8 @@ class DeckManager:
             ], start=1):
                 if enhancedCards:
                     sheet = self.sheets[Enhancement.BASIC.value]
-                    for enhancement, (e_suit, e_rank) in enhancedCards:
+                    for enhancement, card in enhancedCards:
+                        e_suit, e_rank = card.suit, card.rank
                         if (suit, rank) == (e_suit, e_rank):
                             sheet = self.sheets[enhancement.value]
 

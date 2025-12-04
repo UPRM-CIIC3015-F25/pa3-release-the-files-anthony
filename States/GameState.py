@@ -52,7 +52,7 @@ class GameState(State):
         self.gameOverTriggered = False
 
         # Tarot card tests
-        test_tarots = ["Judgment", "The Emperor", "The Hanged Man", "Hierophant Green"]
+        test_tarots = ["Judgment", "The Emperor", "The Hanged Man", "Hierophant Green", "Justice", "The World"]
         for tarot_name in test_tarots:
             if tarot_name in TAROTS:
                 self.consumableDeck.append(TAROTS[tarot_name])
@@ -979,12 +979,10 @@ class GameState(State):
                             self.destroy_sound.play()
                             self.handleDestroyedCards(result)
                         if (result) and ("enhanced_cards" in result) and (result["enhanced_cards"]):
-                            for e_enhancement, (e_suit, e_rank) in result["enhanced_cards"]:
-                                for s_enhancement, (s_suit, s_rank) in self.enhanced_cards:
-                                    if (e_suit, e_rank) == (s_suit, s_rank):
-                                        print((s_enhancement, (s_rank, s_suit)))
-                                        print((e_enhancement, (e_rank, e_suit)))
-                                        self.enhanced_cards.remove((e_enhancement, (s_rank, s_suit)))
+                            for e_enhancement, e_card in result["enhanced_cards"]:
+                                for s_enhancement, s_card in self.enhanced_cards:
+                                    if e_card is s_card:
+                                        self.enhanced_cards.remove((s_enhancement, s_card))
 
                             self.enhanced_cards += result["enhanced_cards"]
 
