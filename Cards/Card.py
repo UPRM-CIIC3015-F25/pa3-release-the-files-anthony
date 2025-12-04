@@ -50,6 +50,21 @@ class Card:
         else:  # Ace
             self.chips = 11
 
+    def get_pretty_enhancement_description(self) -> tuple[str, str]:
+        enhancement_description = {
+            "Basic Card": "Basic value for a card. So basic, in fact, that you shouldn't be seeing this text. What are you doing?",
+            "Bonus Card": "Gives an additional +30 chips when scored",
+            "Mult Card": "Gives an additional +4 Mult when scored",
+            "Wild Card": "Card considered of every suit simultaneously",
+            "Glass Card": "Gives *2 mult when scored [1 in 4 chance to self-destruct]",
+            "Steel Card": "Gives *1.5 mult when held in hand",
+            "Stone Card": "Always scores +50 chips, card not considered of any rank or suit",
+            "Gold Card": "Gives $3 if held in hand AT THE END OF THE ROUND",
+            "Lucky Card": "1 in 5 chance to give +20 mult when scored, 1 in 15 chance to give $20"
+        }
+        e_text = self.enhancement.value
+        return e_text, enhancement_description.get(e_text, "[DESCRIPTIONNOTFOUND]")
+
     def update_enhancement(self, enhancement: Enhancement):
         self.enhancement = enhancement
         return self
