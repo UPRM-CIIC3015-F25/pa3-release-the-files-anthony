@@ -1003,7 +1003,6 @@ class GameState(State):
                 self.selected_info = None
                 return
 
-            # TODO: if we make a use sound, play it here
             # -- Consumable click info --
             # Owned consumables: check positions rendered by GameState
             if not self.consumables:
@@ -1180,6 +1179,7 @@ class GameState(State):
             if rect.collidepoint(mousePos):
                 tooltip_text = f"{card.rank.name.title()} of {card.suit.name.title()} ({card.chips} Chips)"
                 font = self.playerInfo.textFont1
+                smallfont = self.playerInfo.textFont2
                 if self.playerInfo.levelManager.curSubLevel.bossLevel == "The Mark":
                     if card.rank in [Rank.JACK, Rank.QUEEN, Rank.KING]:
                         text_surf = font.render("???", False, 'White')
@@ -1192,13 +1192,74 @@ class GameState(State):
                         text_surf = font.render(tooltip_text, False, 'white')
                 else:
                     text_surf = font.render(tooltip_text, False, 'white')
+
+                sm_text_surf = []
+                tooltip_wrap_char_amount = 30
+                has_enhancement = False
+                desc_height: int = 0
+                desc_width: int = 0
+                if card.enhancement.value != Enhancement.BASIC.value:
+                    has_enhancement = True
+                    sm_title, sm_text = card.get_pretty_enhancement_description()
+
+                    title_surf = smallfont.render(sm_title, False, 'white')
+                    desc_height += title_surf.get_height()
+                    sm_text_surf.append(title_surf)
+
+                    cur_text_line = " "
+                    cur_id = 0
+                    max_len, max_len_id = 0, 0
+                    for i in range(len(sm_text)):
+                        char = sm_text[i]
+                        cur_text_line += char
+                        if (len(cur_text_line) >= tooltip_wrap_char_amount)\
+                                or (i == len(sm_text) - 1):
+
+                            if len(cur_text_line) > max_len:
+                                max_len = len(cur_text_line)
+                                max_len_id = cur_id
+
+                            next_text_line = ""
+                            if i != len(sm_text) - 1:
+                                for j in range(len(cur_text_line)):
+                                    jchar = cur_text_line[len(cur_text_line) - j - 1]
+                                    if jchar == " ":
+                                        next_text_line += cur_text_line[len(cur_text_line) - j - 1:]
+                                        cur_text_line = cur_text_line[:len(cur_text_line) - j - 1]
+                                        break
+
+                            print(cur_text_line)
+
+                            cur_text_surface = smallfont.render(cur_text_line, False, 'white')
+                            desc_height += cur_text_surface.get_height() + 8
+
+                            sm_text_surf.append(cur_text_surface)
+
+                            cur_text_line = next_text_line
+                            cur_id += 1
+
+                    desc_width = sm_text_surf[max_len_id].get_width()\
+                        if (sm_text_surf[max_len_id].get_width() > title_surf.get_width()) else title_surf.get_width()
+
+
+                width = text_surf.get_width() if text_surf.get_width() > desc_width else desc_width
+                height = text_surf.get_height() + desc_height
+
                 padding = 6
-                tooltip_w, tooltip_h = text_surf.get_width() + padding * 2, text_surf.get_height() + padding * 2
+                tooltip_w, tooltip_h = width + padding * 2, height + padding * 2
                 tooltip_surf = pygame.Surface((tooltip_w, tooltip_h), pygame.SRCALPHA)
                 pygame.draw.rect(tooltip_surf, (0, 0, 0, 180), tooltip_surf.get_rect(), border_radius=6)
                 tooltip_surf.blit(text_surf, (padding, padding))
                 tooltip_x = rect.x + (rect.width - tooltip_w) // 2
                 tooltip_y = rect.y - tooltip_h - 10
+
+                offset = text_surf.get_height() + 5
+
+                if has_enhancement:
+                    for i in range(len(sm_text_surf)):
+                        sm_entry = sm_text_surf[i]
+                        tooltip_surf.blit(sm_entry, (padding, padding + offset + (i * 25)))
+
                 self.screen.blit(tooltip_surf, (tooltip_x, tooltip_y))
                 break
 
@@ -1466,7 +1527,6 @@ class GameState(State):
         for c in used_cards:
             card_chips_sum += c.chips
             # Card scoring enhancements
-            # TODO: Verify if this match statement works or if you need to index the <.value>s
             match c.enhancement:
                 case Enhancement.BONUS:
                     card_chips_sum += 30
@@ -1502,11 +1562,9 @@ class GameState(State):
         #   - Gold Cards: Give $3 if held in hand AT THE END OF THE ROUND
         #   List of card enhancements that definitely go somewhere else
         #   - Wild Cards: Are considered of every suit simultaneously (HandEvaluator.py)
-        # TODO: Check if works
         # -----------------------------------------------------------------
 
         # ------------------ Effects for Held Cards ------------------------
-        # TODO: Same thing as above with the selected cards, check if the match statement actually works
         for c in held_cards:
             match c.enhancement:
                 case Enhancement.STEEL:
@@ -1514,7 +1572,7 @@ class GameState(State):
 
         # ------------------- Apply Joker effects -------------------
         owned = set(self.playerJokers)
-        # TODO (TASK 5.2): Let the Joker mayhem begin! Implement each Joker’s effect using the Joker table as reference.
+        # DONE (TASK 5.2): Let the Joker mayhem begin! Implement each Joker’s effect using the Joker table as reference.
         #   Follow this structure for consistency:
         #   if "joker card name" in owned:
         #       # Apply that Joker’s effect
