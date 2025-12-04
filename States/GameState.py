@@ -372,7 +372,6 @@ class GameState(State):
         self.drawDeckPile()
         self.drawPlayerOptions()
         self.drawPlayedHandName()
-        self.drawDeckPileOverlay()
         self.drawUse()
         self.drawSell()
         self.drawHeatDisplay()
@@ -383,6 +382,8 @@ class GameState(State):
             tint = pygame.Surface((1300, 750), pygame.SRCALPHA)
             tint.fill((255, 0, 0, 180))
             self.screen.blit(tint, (0, 0))
+
+        self.drawDeckPileOverlay()
 
         self.screen.blit(self.tvOverlay, (0, 0))
 
