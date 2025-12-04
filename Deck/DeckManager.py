@@ -23,6 +23,7 @@ class DeckManager:
             "Fibonacci", "Michael Myers", "? Block", "Hogwarts", "Straw Hat",
             "802", "Ogre", "Hog Rider", "Gauntlet", "The Joker"
         ]
+        self.sheet = None
     # ---------- Helpers ----------
     def _scaleToHeightIntegerish(self, surf: pygame.Surface, targetH: int) -> pygame.Surface:
         h = surf.get_height()
@@ -65,12 +66,20 @@ class DeckManager:
         return pix.subsurface(rect).copy()
 
     # ---------- Loading ----------
+    def preload_card_images(self):
+        self.sheet = pygame.image.load('Graphics/Cards/Poker_Sprites.png').convert_alpha()
+
     def load_card_images(self, subLevel: SubLevel = None):
         """
         Load 52 card faces at their original resolution (70x94),
         optionally applying 'The Mark' modifications if the boss requires it.
+        TODO (BONUS): include in this the logic necessary for card enhancements.
+            - Load all possible sprite groups
+                > Check if their dimensions match. Return an error if not bc that's a development thing
+            - Check the enhancement of the card
+                > From that, decide which spritesheet to pull from
         """
-        sheet = pygame.image.load('Graphics/Cards/Poker_Sprites.png').convert_alpha()
+        sheet = self.sheet
 
         cardImages = {}
         useMark = False
@@ -225,6 +234,7 @@ class DeckManager:
     #   object for each valid combination. If a matching image is not found, skip that card.
     #   Add each created Card to a list called 'deck' and return the completed list at the end.
     def createDeck(self, subLevel: SubLevel = None):
+        self.preload_card_images()
         cardImages = self.load_card_images(subLevel)
         deck = []
         for card in cardImages:
