@@ -31,6 +31,7 @@ class StartState(State):
         self.textPlay = self.textFont1.render("PLAY", True, 'white')
         self.textInstructions = self.textFont2.render("HELP", True, 'white')
         self.textQuit = self.textFont1.render("QUIT", True, 'white')
+        self.textBossRush = self.textFont1.render("BOSS RUSH", True, 'white')
 
         # ----------------------------- Title Card --------------------------------
         self.titleCardImage = pygame.image.load('Graphics/Backgrounds/titleCard.png')
@@ -44,17 +45,24 @@ class StartState(State):
         self.buttonBar = pygame.Rect(self.titleRect.x, 540, 690, 120)
         self.buttonBarSurface = pygame.Surface((690, 120), pygame.SRCALPHA)
 
-        # Buttons
-        self.buttonPlay = pygame.Rect(0, 0, 190, 75)
-        self.buttonInstructions = pygame.Rect(0, 0, 180, 50)
-        self.buttonQuit = pygame.Rect(0, 0, 200, 75)
+        # Boss rush button
+        self.buttonBossRush = pygame.Rect(0, 0, 200, 75)
 
-        total_width = self.buttonPlay.width + self.buttonInstructions.width + self.buttonQuit.width
-        spacing = (self.buttonBar.width - total_width) // 4  # even spacing
+        # Buttons
+        self.buttonPlay = pygame.Rect(0, 0, 160, 75)
+        self.buttonInstructions = pygame.Rect(0, 0, 150, 50)
+        self.buttonQuit = pygame.Rect(0, 0, 160, 75)
+
+        total_width = self.buttonPlay.width + self.buttonInstructions.width + self.buttonBossRush.width + self.buttonQuit.width
+        spacing = (self.buttonBar.width - total_width) // 5  # even spacing
 
         x = spacing
         self.buttonPlay.topleft = (x, (self.buttonBar.height - self.buttonPlay.height) // 2)
         x += self.buttonPlay.width + spacing
+        # Boss rush button
+        self.buttonBossRush.topleft = (x, (self.buttonBar.height - self.buttonBossRush.height) // 2)
+        x += self.buttonBossRush.width + spacing
+
         self.buttonInstructions.topleft = (x, (self.buttonBar.height - self.buttonInstructions.height) // 2)
         x += self.buttonInstructions.width + spacing
         self.buttonQuit.topleft = (x, (self.buttonBar.height - self.buttonQuit.height) // 2)
@@ -73,7 +81,13 @@ class StartState(State):
             "2. Play your hand with the 'PLAY' button.",
             "3. Sort your hand using 'Rank' or 'Suit'.",
             "4. Discard unwanted Cards with the 'QUIT' button.",
-            "5. Have fun and enjoy the game!"
+            "5. Have fun and enjoy the game!",
+            "",
+            "BOSS RUSH MODE:",
+            "Face 7 Dark Souls bosses back-to-back!",
+            "- Each boss has unique music and background",
+            "- Beat all bosses to win!",
+            "- Earn extra souls for each boss defeated"
         ]
 
     # ----------------------------- Update ------------------------------------
@@ -106,10 +120,34 @@ class StartState(State):
         overlay.fill((0, 0, 0, 200))  # semi-transparent dark overlay
         State.screen.blit(overlay, (0, 0))
 
-        start_y = 150
-        for i, line in enumerate(self.helpText):
+        # Better formatting
+        wrapped_lines = []
+        max_chars_per_line = 60
+
+        for line in self.helpText:
+            if len(line) <= max_chars_per_line:
+                wrapped_lines.append(line)
+            else:
+                words = line.split(' ')
+                current_line = ""
+                for word in words:
+                    if len(current_line) + len(word) + 1 <= max_chars_per_line:
+                        if current_line:
+                            current_line += " " + word
+                        else:
+                            current_line = word
+                    else:
+                        wrapped_lines.append(current_line)
+                        current_line = word
+                if current_line:
+                    wrapped_lines.append(current_line)
+
+        start_y = 100
+        line_height = 40
+
+        for i, line in enumerate(wrapped_lines):
             text_surf = self.helpFont.render(line, True, 'white')
-            text_rect = text_surf.get_rect(center=(650, start_y + i * 50))
+            text_rect = text_surf.get_rect(center=(650, start_y + i * line_height))
             State.screen.blit(text_surf, text_rect)
 
         closeText = self.helpFont.render("Click anywhere to close", True, 'yellow')
@@ -131,8 +169,11 @@ class StartState(State):
         play_base, play_hover = (30, 144, 255), (0, 191, 255)
         instruct_base, instruct_hover = (255, 140, 0), (255, 165, 0)
         quit_base, quit_hover = (178, 34, 34), (255, 69, 58)
+        # Boss rush stuff
+        boss_rush_base, boss_rush_hover = (178, 34, 34), (255, 69, 0)  # Red/Orange for boss rush
 
         draw_button(self.buttonPlay, play_base, play_hover, self.textPlay)
+        draw_button(self.buttonBossRush, boss_rush_base, boss_rush_hover, self.textBossRush)
         draw_button(self.buttonInstructions, instruct_base, instruct_hover, self.textInstructions)
         draw_button(self.buttonQuit, quit_base, quit_hover, self.textQuit)
 
@@ -164,6 +205,7 @@ class StartState(State):
             elif self.buttonQuit.collidepoint(mousePosbuttonBar):
                 self.buttonSound.play()
                 self.isFinished = True
+                self.nextState = "EXIT"
             elif self.buttonPlay.collidepoint(mousePosbuttonBar):
                 self.buttonSound.play()
                 self.isFinished = True
@@ -171,6 +213,10 @@ class StartState(State):
             elif self.buttonInstructions.collidepoint(mousePosbuttonBar):
                 self.buttonSound.play()
                 self.showHelpScreen = True  # show help overlay
+            elif self.buttonBossRush.collidepoint(mousePosbuttonBar):  # NEW
+                self.buttonSound.play()
+                self.isFinished = True
+                self.nextState = "BossRushState"
 
         elif events.type == pygame.MOUSEBUTTONUP:
             self.mouseDragging = False

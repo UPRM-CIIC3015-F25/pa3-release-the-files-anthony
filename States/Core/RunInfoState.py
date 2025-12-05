@@ -237,11 +237,17 @@ class RunInfoState(State):
     def userInput(self, events):
         if events.type == pygame.QUIT:
             self.isFinished = True
-            self.nextState = "GameState"
+            if hasattr(State, 'player_info') and getattr(State.player_info, 'is_boss_rush', False):
+                self.nextState = "BossRushState"
+            else:
+                self.nextState = "GameState"
 
         elif events.type == pygame.MOUSEBUTTONDOWN:
             if self.rects[-1].collidepoint(events.pos):
                 self.isFinished = True
-                self.nextState = "GameState"
+                if hasattr(State, 'player_info') and getattr(State.player_info, 'is_boss_rush', False):
+                    self.nextState = "BossRushState"
+                else:
+                    self.nextState = "GameState"
             else:
                 self.isFinished = False

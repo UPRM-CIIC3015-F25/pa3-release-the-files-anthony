@@ -12,7 +12,14 @@ class ShopState(State):
     def __init__(self, nextState: str = "", game_state=None):
         super().__init__(nextState)
         self.game_state = game_state
-        self.playerInfo = self.game_state.playerInfo
+        # Get playerInfo from game_state
+        if self.game_state:
+            self.playerInfo = self.game_state.playerInfo
+            # Set State.player_info for consistency
+            State.player_info = self.playerInfo
+        elif hasattr(State, 'player_info') and State.player_info:
+            # Fallback to State.player_info (for boss rush)
+            self.playerInfo = State.player_info
 
         # Background snapshot taken when entering the shop
         self.background = State.screenshot
@@ -214,16 +221,19 @@ class ShopState(State):
     def draw(self):
         mousePos = pygame.mouse.get_pos()
         shopSurfacePos = mousePos[0] - self.shopPos[0], mousePos[1] - self.shopPos[1]
+
         # If mouse is over skip/reroll buttons, change their color
         if self.skipbuttondisp_rect.collidepoint(shopSurfacePos):
             skip_color = (255, 100, 100)
         else:
             skip_color = (250, 50, 50)
+
         # If mouse is over reroll button, change its color
         if self.rerollbuttondisp_rect.collidepoint(shopSurfacePos):
             reroll_color = (70, 200, 100)
         else:
             reroll_color = (50, 160, 80)
+
         # --- Draw shop UI ---
         self.skipbuttondisp.fill(skip_color)
         self.rerollbuttondisp.fill(reroll_color)
@@ -244,43 +254,110 @@ class ShopState(State):
         self.drawRandomJokers()
         self._draw_bottom_info_panel()
 
-        # Render background and UI
-        self.screen.blit(self.background, (0, 0))
-        self.playerInfo.drawbuttons()
-        self.screen.blit(self.playerInfo.leftRectSurface, self.playerInfo.leftRect.topleft)
-        self.screen.blit(self.shopSurface, self.shopPos)
-        self.game_state.drawSoulDisplay()
+        # ===== BOSS RUSH DETECTION =====
+        is_boss_rush = False
+        boss_rush_text = ""
 
-        # Apply TV overlay for this state
-        self.screen.blit(self.tvOverlay, (0, 0))
+        if self.playerInfo:
+            # Check playerInfo first (most reliable)
+            if hasattr(self.playerInfo, 'is_boss_rush') and self.playerInfo.is_boss_rush:
+                is_boss_rush = True
+                boss_rush_text = "BOSS RUSH MODE"
 
-        # Draw player's jokers above the shop surface (drawn after overlay so they are not affected)
-        if self.game_state is not None:
-            jc = self.game_state.jokerContainer
-            if jc:
-                # Draw outer rectangle exactly matching jokerContainer
-                outer = jc.copy()
-                pygame.draw.rect(self.screen, (0, 0, 0), outer)
+            # Also check if we're coming from boss rush state
+            if hasattr(self.playerInfo, 'boss_rush_coming_from_shop') and self.playerInfo.boss_rush_coming_from_shop:
+                is_boss_rush = True
+                boss_rush_text = "BOSS RUSH MODE"
 
-                # Inner rectangle inset by 2px on all sides (keep minimum size)
-                inner_x = jc.x + 2
-                inner_y = jc.y + 2
-                inner_w = jc.width - 4
-                inner_h = jc.height - 4
-                if inner_w < 0:
-                    inner_w = 0
-                if inner_h < 0:
-                    inner_h = 0
-                inner = pygame.Rect(inner_x, inner_y, inner_w, inner_h)
-                pygame.draw.rect(self.screen, (70, 70, 70), inner)
-            # draw jokers on top so they remain unaffected by the overlay
+        # Fallback check on game_state
+        if not is_boss_rush and self.game_state:
+            if hasattr(self.game_state, 'is_boss_rush') and self.game_state.is_boss_rush:
+                is_boss_rush = True
+                boss_rush_text = "BOSS RUSH MODE"
+
+        # ===== RENDER BACKGROUND =====
+        if is_boss_rush:
+            # BOSS RUSH SHOP: Clean black background with minimal UI
+            self.screen.fill((0, 0, 0))
+            self.screen.blit(self.shopSurface, self.shopPos)
+
+            # money display
+            if self.playerInfo:
+                # Draw money counter
+                money_font = pygame.font.Font('graphics/text/m6x11.ttf', 48)
+                money_text = f"${self.playerInfo.playerMoney}"
+
+                # Shadow effect
+                money_shadow = money_font.render(money_text, True, (0, 0, 0))
+                self.screen.blit(money_shadow, (37, 37))
+
+                # Main text (green)
+                money_surface = money_font.render(money_text, True, (100, 255, 100))
+                self.screen.blit(money_surface, (35, 130))
+
+                # Money label
+                label_font = pygame.font.Font('graphics/text/m6x11.ttf', 50)
+                label = label_font.render("DABLOONS:", True, (255, 215, 0))
+                self.screen.blit(label, (35, 85))
+
+            # Add boss rush title
+            title_font = pygame.font.Font('graphics/text/m6x11.ttf', 40)
+            title_text = title_font.render(boss_rush_text, True, (255, 215, 0))
+            self.screen.blit(title_text, (650 - title_text.get_width() // 2, 150))
+
+            # Show next boss info if available
+            if self.playerInfo and hasattr(self.playerInfo, 'boss_rush_current_index'):
+                next_boss_index = self.playerInfo.boss_rush_current_index
+                try:
+                    from States.BossRushState import BOSS_RUSH_BOSSES
+                    if next_boss_index < len(BOSS_RUSH_BOSSES):
+                        boss = BOSS_RUSH_BOSSES[next_boss_index]
+                        boss_font = pygame.font.Font('graphics/text/m6x11.ttf', 30)
+                        boss_text = boss_font.render(f"Next: {boss['name']}", True, (255, 100, 100))
+                        self.screen.blit(boss_text, (650 - boss_text.get_width() // 2, 200))
+
+                        # Show boss description if available
+                        if 'description' in boss:
+                            desc_font = pygame.font.Font('graphics/text/m6x11.ttf', 20)
+                            desc_text = desc_font.render(f"{boss['description']}", True, (200, 200, 200))
+                            self.screen.blit(desc_text, (650 - desc_text.get_width() // 2, 240))
+                except ImportError:
+                    pass  # Skip if can't import
+        else:
+            # NORMAL SHOP: Use game screenshot as background with full UI
+            if self.background:
+                self.screen.blit(self.background, (0, 0))
+            else:
+                self.screen.fill((0, 0, 0))
+
+            if self.playerInfo:
+                self.playerInfo.drawbuttons()
+                self.screen.blit(self.playerInfo.leftRectSurface, self.playerInfo.leftRect.topleft)
+
+            if self.game_state:
+                self.game_state.drawSoulDisplay()
+
+            self.screen.blit(self.shopSurface, self.shopPos)
+
+        # ===== DRAW JOKERS AND CONSUMABLES (FOR BOTH MODES) =====
+        if self.game_state:
             self.game_state.drawJokers()
             self.game_state.drawConsumables()
 
-        # Draw sell confirmation (if any)
+        # ===== DRAW SELL/USE BUTTONS (FOR BOTH MODES) =====
         self.drawSell()
-        # Draw use symbol (if any)
         self.drawUse()
+
+        # ===== APPLY TV OVERLAY =====
+        if hasattr(self, 'tvOverlay'):
+            if is_boss_rush:
+                # Lighter overlay for boss rush (optional - can remove if too dark)
+                self.tvOverlay.set_alpha(100)
+                self.screen.blit(self.tvOverlay, (0, 0))
+                self.tvOverlay.set_alpha(160)  # Reset
+            else:
+                # Normal overlay for regular game
+                self.screen.blit(self.tvOverlay, (0, 0))
 
     # ---------- Draw cards ----------
     def drawRandomJokers(self):
@@ -392,9 +469,30 @@ class ShopState(State):
 
             # Next Round
             if self.skipbuttondisp_rect.collidepoint(shopSurfacePos):
-                self.nextState = "LevelSelectState"
-                self.isFinished = True
-                return
+                # Check for boss rush mode
+                is_boss_rush = False
+                if self.playerInfo:
+                    is_boss_rush = getattr(self.playerInfo, 'is_boss_rush', False)
+                    if not is_boss_rush and hasattr(self.playerInfo, 'boss_rush_coming_from_shop'):
+                        is_boss_rush = self.playerInfo.boss_rush_coming_from_shop
+
+
+                if is_boss_rush:
+                    # Save current game state to playerInfo for boss rush continuity
+                    if self.game_state:
+                        self.playerInfo.saved_player_jokers = list(self.game_state.playerJokers)
+                        self.playerInfo.saved_player_consumables = list(self.game_state.playerConsumables)
+                        self.playerInfo.saved_player_money = self.playerInfo.playerMoney
+
+                    self.nextState = "BossRushState"
+                    self.isFinished = True
+                    return
+                else:
+                    # ===== NORMAL GAME: Go to LevelSelectState =====
+                    print("🛒 Returning to LevelSelectState (normal game)")
+                    self.nextState = "LevelSelectState"
+                    self.isFinished = True
+                    return
 
             # Reroll
             if self.rerollbuttondisp_rect.collidepoint(shopSurfacePos):
@@ -576,7 +674,7 @@ class ShopState(State):
                 if not self.game_state.consumables:
                     self.game_state.drawConsumables()
                 for joker_obj, joker_rect in self.game_state.jokers.items():
-                    if joker_rect.collidepoint(mousePos) and not (self.joker_for_sell or self.joker_for_use):
+                    if joker_rect.collidepoint(mousePos):
                         desc_text = self._pretty_joker_description(joker_obj)
                         if joker_obj is not None:
                             price = joker_obj.price
@@ -586,15 +684,13 @@ class ShopState(State):
                         self.selected_info = {'name': joker_obj.name, 'desc': desc_text, 'price': price,
                                               'can_buy': False}
                         return
-                else:
-                    self.joker_for_sell = None
 
             # Owned consumables: check positions rendered by GameState
             if self.game_state is not None:
                 if not self.game_state.consumables:
                     self.game_state.drawConsumables()
                 for joker_obj, joker_rect in self.game_state.consumables.items():
-                    if joker_rect.collidepoint(mousePos) and not (self.joker_for_sell or self.joker_for_use):
+                    if joker_rect.collidepoint(mousePos):
                         desc_text = joker_obj.description
                         price = joker_obj.price
                         name = joker_obj.name
@@ -606,9 +702,6 @@ class ShopState(State):
                         self.selected_info = {'name': name, 'desc': desc_text, 'price': price,
                                               'can_buy': False, 'usable': usable}
                         return
-                else:
-                    self.joker_for_sell = None
-                    self.joker_for_use = None
 
             # Shop offers
             for idx, rect in enumerate(self.shop_random_joker_rects):

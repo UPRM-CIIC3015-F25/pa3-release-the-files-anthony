@@ -7,6 +7,8 @@ from States.Core.RunInfoState import RunInfoState
 from States.Core.PlayerInfo import PlayerInfo
 from States.Menus.ShopState import ShopState
 from States.Menus.LevelSelectState import LevelSelectState
+from States.BossRushState import BossRushState
+import sys
 
 if __name__ == "__main__":
     # --- Pygame setup ---
@@ -24,6 +26,7 @@ if __name__ == "__main__":
     player = PlayerInfo()
     gameScreen = GameState(player=player)
     curScreen = startScreen
+    bossRushScreen = None
 
     # --- Main loop ---
     while True:
@@ -65,6 +68,16 @@ if __name__ == "__main__":
             elif curScreen.nextState == "LevelSelectState":
                 curScreen.isFinished = False
                 curScreen = LevelSelectState(playerInfo=player, deckManager=State.deckManager)
+
+            # Boss rush
+            elif curScreen.nextState == "BossRushState":
+                curScreen.isFinished = False
+                boss_rush_player = PlayerInfo()
+                curScreen = BossRushState(playerInfo=boss_rush_player)
+            elif curScreen.nextState == "EXIT":  # Add this new condition
+                pygame.quit()
+                sys.exit()
+                # fall exit
             else:
                 exit()
 

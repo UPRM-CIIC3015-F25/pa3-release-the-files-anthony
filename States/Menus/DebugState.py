@@ -112,7 +112,6 @@ class DebugState(State):
                 self.visible = not self.visible
                 print(f"[DEBUG] UI {'shown' if self.visible else 'hidden'}")
 
-            # → Skip current blind
 
             #------- DO NOT TOUCH THIS ELIF ---------
             elif self.visible and events.key == pygame.K_RIGHT:
@@ -123,22 +122,29 @@ class DebugState(State):
                 if self.game_state:
                     player = self.game_state.playerInfo
                     levelManager = player.levelManager
-                    if levelManager.curSubLevel is not None:
-                        player.roundScore = levelManager.curSubLevel.score
-                        levelManager.update()
-                    else:
-                        player.levelFinished = True
 
-                    # If LevelManager set playerWins (no more levels), go to GameWinState
-                    if player.levelManager.playerWins:
-                        self.game_state.nextState = "GameWinState"
-                        self.game_state.isFinished = True
+                    if hasattr(self.game_state, 'is_boss_rush') and self.game_state.is_boss_rush:
+                        print("[DEBUG] In Boss Rush mode - requesting boss skip")
+                        self.game_state.debug_skip_requested = True
                     else:
-                        # Otherwise go to level selection as usual
-                        self.game_state.nextState = "LevelSelectState"
-                        self.game_state.isFinished = True
+                        # Normal game skip logic
+                        if levelManager.curSubLevel is not None:
+                            player.roundScore = levelManager.curSubLevel.score
+                            levelManager.update()
+                        else:
+                            player.levelFinished = True
+
+                        # GameWinState
+                        if player.levelManager.playerWins:
+                            self.game_state.nextState = "GameWinState"
+                            self.game_state.isFinished = True
+                        else:
+                            # level selection
+                            self.game_state.nextState = "LevelSelectState"
+                            self.game_state.isFinished = True
+
             elif self.visible and events.key == pygame.K_UP:
                 print("[DEBUG] Adding 1$ to player money...")
                 if self.game_state:
                     player = self.game_state.playerInfo
-                    player.playerMoney += 100
+                    player.playerMoney += 1000

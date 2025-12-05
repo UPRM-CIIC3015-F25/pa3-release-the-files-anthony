@@ -3,6 +3,7 @@ from States.Core.StateClass import State
 from Levels.LevelManager import LevelManager
 
 
+
 class PlayerInfo(State):
     def __init__(self, nextState: str = ""):
         super().__init__(nextState)
@@ -26,6 +27,7 @@ class PlayerInfo(State):
         self.max_heat = 100
         self.isHeatActive = False
         self.heatDuration = 0
+        self.is_boss_rush = False
 
 
         
@@ -108,16 +110,20 @@ class PlayerInfo(State):
             self.smallBlindDirection *= -1  # Reverse direction when max angle reached
 
         # Update background based on whether current level is a boss level
-        if self.levelManager.curSubLevel.bossLevel == "":
-            self.backgroundImage = pygame.image.load('Graphics/Backgrounds/gameplayBG.jpg')
-            self.background = pygame.transform.scale(self.backgroundImage, (1300, 750))
-        else:
-            self.backgroundImage = pygame.image.load('Graphics/Backgrounds/bossBG.png')
-            self.background = pygame.transform.scale(self.backgroundImage, (1300, 750))
+        if not hasattr(self, 'is_boss_rush') or not self.is_boss_rush:
+            if self.levelManager.curSubLevel.bossLevel == "":
+                self.backgroundImage = pygame.image.load('Graphics/Backgrounds/gameplayBG.jpg')
+                self.background = pygame.transform.scale(self.backgroundImage, (1300, 750))
+            else:
+                self.backgroundImage = pygame.image.load('Graphics/Backgrounds/bossBG.png')
+                self.background = pygame.transform.scale(self.backgroundImage, (1300, 750))
         self.draw() # draw the updated player info panel
 
     def draw(self):
-        self.screen.blit(self.background, (0, 0))
+
+        if not hasattr(self, 'is_boss_rush') or not self.is_boss_rush:
+            self.screen.blit(self.background, (0, 0))
+
         pygame.draw.rect(State.screen, (50, 50, 50), self.leftRect)
         pygame.draw.rect(State.screen, 'blue', self.leftRect, 1)
         self.leftRectSurface.fill((0, 0, 0, 0))

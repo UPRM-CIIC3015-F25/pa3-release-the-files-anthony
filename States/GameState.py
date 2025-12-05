@@ -51,8 +51,14 @@ class GameState(State):
         # Game over flag
         self.gameOverTriggered = False
 
+        # Boss rush hooks (Don't worry about this on regular game play)
+        self.on_pre_play_hand = None
+        self.on_post_play_hand = None
+        self.on_hand_completed = None
+        self.on_update = None
+
         # Tarot card tests
-        test_tarots = ["Judgment", "The Emperor", "The Hanged Man", "Hierophant Green", "Justice", "The World"]
+        test_tarots = ["The World", "The World", "Star Platinum", "Judgment", "Judgement", "Judgment"]
         for tarot_name in test_tarots:
             if tarot_name in TAROTS:
                 self.consumableDeck.append(TAROTS[tarot_name])
@@ -361,8 +367,10 @@ class GameState(State):
         self.debugState.update()
 
     def draw(self):
+        print(f"🎮 GameState.draw() called, showReviveOption={self.showReviveOption}")
         # mess with this later (Change the bg to black)
         if self.showReviveOption:
+            print(f"🎮 Showing game over screen!")
             self.screen.fill((0, 0, 0))
             tint = pygame.Surface((1300, 750), pygame.SRCALPHA)
             tint.fill((255, 0, 0, 180))
@@ -1358,6 +1366,11 @@ class GameState(State):
     def playHand(self):
         target_score = self.playerInfo.levelManager.curSubLevel.score
         heat_play = self.playerInfo.isHeatActive and self.playerInfo.heat_level == 3
+
+        # Hook 1 of boss rush (named them hooks because thats the only description for this I can think of)
+        if self.on_pre_play_hand:
+            self.on_pre_play_hand()
+
         if self.playerInfo.amountOfHands <= 0 and not heat_play:
             if self.playerInfo.roundScore < target_score and not self.gameOverTriggered:
                 self.gameOverTriggered = True
@@ -1570,6 +1583,10 @@ class GameState(State):
         # total chips for display = base hand value + sum of used Cards' chips
         total_chips = hand_chips + card_chips_sum
 
+        # Hook 2
+        if self.on_post_play_hand:
+            self.on_post_play_hand()
+
         # ----------------- Apply Card Enhancements -----------------
         # DONE (BONUS): Apply the effects for every card enhancement that influences scoring
         #   List of card enhancements that apply in scoring (above):
@@ -1603,6 +1620,12 @@ class GameState(State):
         #       self.activated_jokers.add("joker card name")
         #   The last line ensures the Joker is visibly active and its effects are properly applied.
         # Variables for readability
+
+        # disabled random joker (boss rush only)
+        owned = set(self.playerJokers)
+        if hasattr(self, 'disabled_jokers'):
+            owned = owned - set(self.disabled_jokers)
+
         two = Rank.TWO
         three = Rank.THREE
         four = Rank.FOUR
@@ -1729,6 +1752,10 @@ class GameState(State):
         for i, card in enumerate(self.cardsSelectedList):
             w, h = card.scaled_image.get_width(), card.scaled_image.get_height()
             self.cardsSelectedRect[card] = pygame.Rect(start_x + i * spacing, start_y, w, h)
+
+        # Hook 3
+        if self.on_hand_completed:
+            self.on_hand_completed()
 
         # ------------- Apply Effects for Winning Hand --------------
         if added_to_round > self.playerInfo.levelManager.curSubLevel.score:
