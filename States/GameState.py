@@ -624,8 +624,9 @@ class GameState(State):
             self.screen.blit(active_text, (bar_x, bar_y + 25))
 
         # Heat instructions
-        heat_instructions = self.playerInfo.textFont2.render(f"Press 'H' to activate heat", False, (255, 255, 255))
-        self.screen.blit(heat_instructions, (bar_x, bar_y + 30))
+        if heat_level > 0 and not is_active:
+            heat_instructions = self.playerInfo.textFont2.render(f"Press 'H' to activate heat", False, (255, 255, 255))
+            self.screen.blit(heat_instructions, (bar_x, bar_y + 30))
 
     # --- Sell button (has duplicate in ShopState) -----
     def drawSell(self):
