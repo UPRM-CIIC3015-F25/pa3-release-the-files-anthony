@@ -615,6 +615,10 @@ class GameState(State):
             active_text = self.playerInfo.textFont1.render("HEAT ACTIVE!", True, (255, 255, 0))
             self.screen.blit(active_text, (bar_x, bar_y + 25))
 
+        # Heat instructions
+        heat_instructions = self.playerInfo.textFont2.render(f"Press 'H' to activate heat", False, (255, 255, 255))
+        self.screen.blit(heat_instructions, (bar_x, bar_y + 30))
+
     # --- Sell button (has duplicate in ShopState) -----
     def drawSell(self):
         if not self.joker_for_sell:
