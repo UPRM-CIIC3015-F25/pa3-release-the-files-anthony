@@ -107,7 +107,7 @@ def evaluate_hand(hand: list[Card]):
     max_hand_value: int = HAND_VALUES[max_hand]
     for play_hand in current_hands:
         score_hand = "Straight Flush" if (play_hand == "Royal Flush") else play_hand
-        score_hand = "Flush House" if (play_hand == "Flush House") else play_hand
+        score_hand = "Full House" if (play_hand == "Flush House") else play_hand
         if HAND_VALUES[score_hand] > max_hand_value:
             max_hand_value = HAND_VALUES[score_hand]
             max_hand = play_hand
