@@ -782,8 +782,7 @@ class GameState(State):
                 cards.append(suit_row)
 
             for row, suit_list in enumerate(cards):
-                long: bool = len(suit_list) > 13
-                row_spacing_x = spacing_x if not long else (( 12 / (len(suit_list) - 12) ) * spacing_x)
+                row_spacing_x = (( 13 / len(suit_list) ) * spacing_x)
                 for col, card in enumerate(suit_list):
                     img = card.image
                     if img:
@@ -792,7 +791,7 @@ class GameState(State):
                         self.screen.blit(img, (x,y))
 
                     if card in unusable: #or (suit, rank) in deck_selected:
-                        rect = pygame.Rect(start_x + col * spacing_x, start_y + row * spacing_y, img.get_width(), img.get_height())
+                        rect = pygame.Rect(start_x + col * row_spacing_x, start_y + row * spacing_y, img.get_width(), img.get_height())
                         self.gray_overlay_(self.screen, rect)
 
             close_text = self.playerInfo.textFont2.render("Click anywhere to close", True, 'white')
