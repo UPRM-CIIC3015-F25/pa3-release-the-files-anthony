@@ -79,7 +79,7 @@ class GameState(State):
 
         # for joker in self.jokerDeck:
         #     print(joker.name)
-        
+
         self.cardsSelectedList = []
         self.cardsSelectedRect = {}
         self.playedHandNameList = ['']
@@ -802,7 +802,7 @@ class GameState(State):
             # Dialogue box logic
             if self.showReviveOption:
                 if events.type == pygame.MOUSEBUTTONDOWN:
-                    print("DEBUG: Mouse click during game over")
+                    # print("DEBUG: Mouse click during game over")
                     if self.noButtonRect.collidepoint(mousePos):
                         print("DEBUG: No button clicked - going to StartState")
                         self.showReviveOption = False
@@ -1730,13 +1730,13 @@ class GameState(State):
         # Destroys them mfs
         if "destroyed_cards" in result and result["destroyed_cards"]:
             destroyed_cards.extend(result["destroyed_cards"])
-            print(f"DEBUG: Found {len(destroyed_cards)} destroyed cards in result")
+            #print(f"DEBUG: Found {len(destroyed_cards)} destroyed cards in result")
 
         if not destroyed_cards:
-            print("DEBUG: No destroyed cards found in result")
+            #print("DEBUG: No destroyed cards found in result")
             return
 
-        print("DEBUG: Cards to destroy:")
+        #print("DEBUG: Cards to destroy:")
         for card in destroyed_cards:
             print(f"  - {card.rank.name} of {card.suit.value} (in hand: {card in self.hand}, in deck: {card in self.deck})")
 
@@ -1755,18 +1755,18 @@ class GameState(State):
         for card in destroyed_cards:
             if card in self.cardsSelectedList:
                 self.cardsSelectedList.remove(card)
-                print(f"DEBUG: Removed {card.rank.name} of {card.suit.value} from cardsSelectedList")
+                #print(f"DEBUG: Removed {card.rank.name} of {card.suit.value} from cardsSelectedList")
 
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
         if cards_removed:
             print(f"SUCCESS: Destroyed and removed: {', '.join(cards_removed)}")
-            print(f"DEBUG: Hand now has {len(self.hand)} cards")
+            #print(f"DEBUG: Hand now has {len(self.hand)} cards")
         else:
             print("ERROR: No cards were actually removed")
 
     def updateCardImages(self):
-        print("DEBUG: Force updating all card images")
+        #print("DEBUG: Force updating all card images")
 
         card_images = State.deckManager.load_card_images(self.playerInfo.levelManager.next_unfinished_sublevel(), self.enhanced_cards)
 
@@ -1782,7 +1782,7 @@ class GameState(State):
         self.cards.clear()
         self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
-        print("DEBUG: Force update completed")
+        #print("DEBUG: Force update completed")
 
     def handleJudgmentEffect(self):
         """Handle Judgment tarot - create random joker"""
