@@ -104,19 +104,23 @@ class DeckManager:
                 Rank.SEVEN, Rank.EIGHT, Rank.NINE, Rank.TEN,
                 Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE
             ], start=1):
+                cell = {}
+                x = colIdx * self.srcCardW
+                y = suitIdx * self.srcCardH
+
                 if enhancedCards:
-                    sheet = self.sheets[Enhancement.BASIC.value]
                     for enhancement, card in enhancedCards:
                         e_suit, e_rank = card.suit, card.rank
                         if (suit, rank) == (e_suit, e_rank):
                             sheet = self.sheets[enhancement.value]
+                            cell[enhancement.value] = sheet.subsurface(pygame.Rect(x, y, self.srcCardW, self.srcCardH)).copy()
 
-                x = colIdx * self.srcCardW
-                y = suitIdx * self.srcCardH
-                cell = sheet.subsurface(pygame.Rect(x, y, self.srcCardW, self.srcCardH)).copy()
+                sheet = self.sheets[Enhancement.BASIC.value]
+                cell[Enhancement.BASIC.value] = sheet.subsurface(pygame.Rect(x, y, self.srcCardW, self.srcCardH)).copy()
 
                 if useMark and rank in (Rank.JACK, Rank.QUEEN, Rank.KING):
-                    cell = markFace.copy()
+                    for e in cell:
+                        cell[e] = markFace.copy()
 
                 cardImages[(suit, rank)] = cell
         return cardImages
@@ -251,8 +255,9 @@ class DeckManager:
         deck = []
         for card in cardImages:
             suit, rank = card
-            if cardImages[card]:
-                deck.append(Card(suit=suit, rank=rank, image=cardImages[card]))
+            for enhancement in cardImages[card]:
+                if cardImages[card][enhancement]:
+                    deck.append(Card(suit=suit, rank=rank, image=cardImages[card][enhancement]))
         return deck
 
     # TODO (TASK 5.1): Complete the priceMap variable by assigning each joker a price.

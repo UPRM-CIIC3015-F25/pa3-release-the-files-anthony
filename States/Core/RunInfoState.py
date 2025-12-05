@@ -1,5 +1,5 @@
 import pygame
-from Cards.Card import Suit, Rank
+from Cards.Card import Suit, Rank, Enhancement
 from States.Core.StateClass import State
 from States.GameState import HAND_SCORES
 
@@ -224,7 +224,7 @@ class RunInfoState(State):
                 cardY = infoBox.get_rect().centery
 
                 for rank, suit in self.cards:
-                    img = self.cardImages.get((suit, rank))
+                    img = self.cardImages.get((suit, rank)).get(Enhancement.BASIC)
                     if img:
                         infoBox.blit(img, (cardX, cardY))
                         cardX += cardSize + spacing

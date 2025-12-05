@@ -215,7 +215,11 @@ class GameState(State):
             return
         # Check if we need to reset deck (coming back from LevelSelectState)
         if self.deckManager.resetDeck:
-            self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.next_unfinished_sublevel()))
+            for card in self.hand:
+                card.isSelected = False
+            self.deck = self.deck + self.hand.copy() #+ self.used.copy()
+            self.updateCardImages()
+            self.deck = State.deckManager.shuffleDeck(self.deck)
             self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.next_unfinished_sublevel())
             self.used = []
             self.cardsSelectedList = []
@@ -241,7 +245,11 @@ class GameState(State):
             State.screenshot = self.screen.copy()
             State.player_info = self.playerInfo
             self.isFinished = True
-            self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.next_unfinished_sublevel()))
+            for card in self.hand + self.used:
+                card.isSelected = False
+            self.deck = self.deck + self.hand.copy() + self.used.copy()
+            self.deck = State.deckManager.shuffleDeck(self.deck)
+            self.updateCardImages()
             self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.next_unfinished_sublevel())
             self.playerInfo.amountOfHands = 4
             self.nextState = "ShopState"
@@ -699,7 +707,7 @@ class GameState(State):
         scaled_card = pygame.transform.scale(card_img, self.pileContainer.size)
         pileContainer.blit(scaled_card, (0, 0))
         self.screen.blit(pileContainer, self.pileContainer.topleft)
-        pileCountText = self.playerInfo.textFont1.render(str(len(self.deck)) + "/" + str(len(self.deck + self.hand)), True, 'white')
+        pileCountText = self.playerInfo.textFont1.render(str(len(self.deck)) + "/" + str(len(self.deck + self.hand + self.used)), True, 'white')
         textX = self.pileContainer.x + 5
         textY = self.pileContainer.y + self.pileContainer.height + 5
         self.screen.blit(pileCountText, (textX, textY))
@@ -753,8 +761,6 @@ class GameState(State):
             suits = [Suit.HEARTS, Suit.CLUBS, Suit.DIAMONDS, Suit.SPADES]
             ranks = [Rank.ACE, Rank.TWO, Rank.THREE, Rank.FOUR, Rank.FIVE, Rank.SIX, Rank.SEVEN,
                      Rank.EIGHT, Rank.NINE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING]
-            enhancements = [Enhancement.BASIC, Enhancement.BONUS, Enhancement.GLASS, Enhancement.STEEL,
-                            Enhancement.LUCKY]
             start_x, start_y = 100, 100
             spacing_x, spacing_y = 75, 100
 
@@ -766,7 +772,7 @@ class GameState(State):
             for c in self.used:
                 unusable.add(c)
 
-            pre_cards = sorted(self.hand + self.deck, key=lambda card: card.rank.value, reverse=True)
+            pre_cards = sorted(self.hand + self.deck + self.used, key=lambda card: card.rank.value, reverse=True)
             cards = []
             for row, suit in enumerate(suits):
                 suit_row = []
@@ -979,12 +985,6 @@ class GameState(State):
                             elif result["effect"] == "recreate_last_used":
                                 self.handleFoolEffect()
 
-                        if joker_obj.name in [
-                            "Star Platinum", "The World", "Death 13",
-                            "Silver Chariot", "Magician's Red", "Hierophant Green", "Justice"]:
-                            self.updateCardImages()
-                            self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
-
                         if joker_obj.name != "The Fool":
                             self.card_usage_history.append(joker_obj.name)
                             self.card_usage_history = self.card_usage_history[-10:]
@@ -1000,12 +1000,16 @@ class GameState(State):
                                         self.enhanced_cards.remove((s_enhancement, s_card))
 
                             self.enhanced_cards += result["enhanced_cards"]
-
                             self.use_sound.play()
+
+
+                        if (result and ("enhanced_cards" in result)) or joker_obj.name in [
+                            "Star Platinum", "The World", "Death 13",
+                            "Silver Chariot", "Magician's Red", "Hierophant Green", "Justice"]:
                             self.updateCardImages()
                             self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
 
-                        # Remove from inventory
+                    # Remove from inventory
                     self.playerConsumables.remove(joker_obj.name)
                     print(f"DEBUG: Removed {joker_obj.name} from playerConsumables")
                     print(f"DEBUG: playerConsumables after removal: {self.playerConsumables}")
@@ -1242,8 +1246,6 @@ class GameState(State):
                                         next_text_line += cur_text_line[len(cur_text_line) - j - 1:]
                                         cur_text_line = cur_text_line[:len(cur_text_line) - j - 1]
                                         break
-
-                            print(cur_text_line)
 
                             cur_text_surface = smallfont.render(cur_text_line, False, 'white')
                             desc_height += cur_text_surface.get_height() + 8
@@ -1551,7 +1553,6 @@ class GameState(State):
                     hand_mult *= 2
                     if random.randint(1, 4) == 1:
                         self.hand.remove(c)
-                        self.deck.remove(c)
                 case Enhancement.LUCKY:
                     if random.randint(1, 5) == 1:
                         hand_mult += 20
@@ -1777,7 +1778,8 @@ class GameState(State):
         for card in self.hand:
             key = (card.suit, card.rank)
             if key in card_images:
-                card.image = card_images[key]
+                print(card_images[key])
+                card.image = card_images[key][card.enhancement.value]
                 original_w, original_h = card.image.get_size()
                 scaled_w = int(original_w * 1.2)
                 scaled_h = int(original_h * 1.2)
@@ -1985,13 +1987,15 @@ class GameState(State):
         if removeFromHand:  # Recursive cases
             if len(self.cardsSelectedList) > 0:  # If it isn't an empty hand, keep removing a card from the hand
                 card_to_remove = self.cardsSelectedList.pop()
-                self.hand.remove(card_to_remove)
-                self.used.append(card_to_remove)
-                self.discardCards(removeFromHand=True)
+                card_to_remove.isSelected = False
+                if card_to_remove in self.hand:
+                    self.hand.remove(card_to_remove)
+                    self.used.append(card_to_remove)
+                    self.discardCards(removeFromHand=True)
 
             self.discardCards(False) # If the hand is now empty, go into the next part of the loop
 
-        if len(self.hand) < 8:  # Alternate recursive case: fill the deck back up
+        if (len(self.hand) < 8) and (len(self.deck) > 0):  # Alternate recursive case: fill the deck back up
             new_card = self.deck.pop()
             self.hand.append(new_card)
             self.discardCards(removeFromHand=False)
