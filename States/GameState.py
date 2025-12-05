@@ -782,10 +782,12 @@ class GameState(State):
                 cards.append(suit_row)
 
             for row, suit_list in enumerate(cards):
+                long: bool = len(suit_list) > 13
+                row_spacing_x = spacing_x if not long else (( 12 / (len(suit_list) - 12) ) * spacing_x)
                 for col, card in enumerate(suit_list):
                     img = card.image
                     if img:
-                        x = start_x + col * spacing_x
+                        x = start_x + col * row_spacing_x
                         y = start_y + row * spacing_y
                         self.screen.blit(img, (x,y))
 
