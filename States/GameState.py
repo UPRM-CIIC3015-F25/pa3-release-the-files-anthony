@@ -756,21 +756,30 @@ class GameState(State):
 
             unusable = set()
             for c in self.cardsSelectedList:
-                unusable.add((c.suit, c.rank))
+                unusable.add(c)
             for c in self.hand:
-                unusable.add((c.suit, c.rank))
+                unusable.add(c)
             for c in self.used:
-                unusable.add((c.suit, c.rank))
+                unusable.add(c)
 
+            pre_cards = sorted(self.hand + self.deck, key=lambda card: card.rank.value, reverse=True)
+            cards = []
             for row, suit in enumerate(suits):
-                for col, rank in enumerate(ranks):
-                    img = card_images.get((suit, rank))
+                suit_row = []
+                for card in pre_cards:
+                    if card.suit == suit:
+                        suit_row.append(card)
+                cards.append(suit_row)
+
+            for row, suit_list in enumerate(cards):
+                for col, card in enumerate(suit_list):
+                    img = card.image
                     if img:
                         x = start_x + col * spacing_x
                         y = start_y + row * spacing_y
                         self.screen.blit(img, (x,y))
 
-                    if (suit, rank) in unusable: #or (suit, rank) in deck_selected:
+                    if card in unusable: #or (suit, rank) in deck_selected:
                         rect = pygame.Rect(start_x + col * spacing_x, start_y + row * spacing_y, img.get_width(), img.get_height())
                         self.gray_overlay_(self.screen, rect)
 
