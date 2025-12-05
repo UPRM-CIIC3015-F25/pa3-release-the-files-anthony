@@ -825,6 +825,7 @@ class GameState(State):
                         self.playerInfo.roundScore = 0
                         self.playerInfo.playerChips = 0
                         self.playerInfo.playerMultiplier = 0
+                        self.playerInfo.playerMoney = 0
 
                         # reset blind
                         if self.playerInfo.levelManager.curLevel:
@@ -837,6 +838,10 @@ class GameState(State):
                         self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.curSubLevel)
                         self.deck = State.deckManager.shuffleDeck(State.deckManager.createDeck(self.playerInfo.levelManager.next_unfinished_sublevel()))
                         self.hand = State.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.next_unfinished_sublevel())
+                        self.jokerDeck = State.deckManager.shuffleDeck(State.deckManager.createJokerDeck())
+                        self.consumableDeck = State.deckManager.shuffleDeck(State.deckManager.createConsumableDeck())
+                        self.playerJokers = []
+                        self.playerConsumables = []
                         self.used = []
                         self.cardsSelectedList = []
                         self.cardsSelectedRect = {}
