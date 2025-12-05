@@ -1559,6 +1559,7 @@ class GameState(State):
                 case Enhancement.GLASS:
                     hand_mult *= 2
                     if random.randint(1, 4) == 1:
+                        self.destroy_sound.play()
                         self.hand.remove(c)
                 case Enhancement.LUCKY:
                     if random.randint(1, 5) == 1:
