@@ -695,7 +695,7 @@ class GameState(State):
         scaled_card = pygame.transform.scale(card_img, self.pileContainer.size)
         pileContainer.blit(scaled_card, (0, 0))
         self.screen.blit(pileContainer, self.pileContainer.topleft)
-        pileCountText = self.playerInfo.textFont1.render(str(len(self.deck)) + "/44", True, 'white')
+        pileCountText = self.playerInfo.textFont1.render(str(len(self.deck)) + "/" + str(len(self.deck + self.hand)), True, 'white')
         textX = self.pileContainer.x + 5
         textY = self.pileContainer.y + self.pileContainer.height + 5
         self.screen.blit(pileCountText, (textX, textY))
