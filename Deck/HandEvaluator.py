@@ -24,7 +24,6 @@ HAND_VALUES = {
 #   If both a straight and a flush occur in the same suit, return "Straight Flush". Otherwise, use the rank counts
 #   and flags to determine if the hand is: "Four of a Kind", "Full House", "Flush", "Straight", "Three of a Kind",
 #   "Two Pair", "One Pair", or "High Card". Return a string with the correct hand type at the end.
-# TODO: Once program progresses, check if this code still works
 def evaluate_hand(hand: list[Card]):
     current_hands = set()
 
@@ -107,7 +106,8 @@ def evaluate_hand(hand: list[Card]):
     max_hand: str = ""
     max_hand_value: int = HAND_VALUES[max_hand]
     for play_hand in current_hands:
-        score_hand = "Straight Flush" if play_hand == "Royal Flush" else play_hand
+        score_hand = "Straight Flush" if (play_hand == "Royal Flush") else play_hand
+        score_hand = "Flush House" if (play_hand == "Flush House") else play_hand
         if HAND_VALUES[score_hand] > max_hand_value:
             max_hand_value = HAND_VALUES[score_hand]
             max_hand = play_hand
