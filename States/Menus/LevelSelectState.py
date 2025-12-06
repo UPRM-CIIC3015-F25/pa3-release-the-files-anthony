@@ -86,7 +86,7 @@ class LevelSelectState(State):
 
                 # If there's a next sublevel, set it as current
                 lm.curSubLevel = nxt
-                # TODO (TASK 9.2) - Adjust player limits and reset values based on the current Boss Blind.
+                # DONE (TASK 9.2) - Adjust player limits and reset values based on the current Boss Blind.
                 #   Implement conditional logic that modifies the player's hand and discard limits depending
                 #   on which boss is active.
                 #   Finally, make sure to reset the player’s round score to 0 at the end of this setup.
@@ -125,7 +125,7 @@ class LevelSelectState(State):
         self.sublevelCards = []
 
         # Dict of boss with their abilities
-        # TODO (TASK 9.1) - Define a dictionary called `boss_abilities` that maps each Boss Blind’s name to its special effect.
+        # DONE (TASK 9.1) - Define a dictionary called `boss_abilities` that maps each Boss Blind’s name to its special effect.
         #   Each key should be the name of a boss (e.g., "The Mark", "The Needle", etc.), and each value should describe
         #   what unique restriction or ability that boss applies during the round.
         #   This dictionary will later be used to look up and apply special effects based on which boss is active.

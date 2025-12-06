@@ -654,7 +654,6 @@ class ShopState(State):
                 else:
                     print(f"[SHOP] use: {joker_obj.name} not in playerJokers")
 
-                # TODO: if we make a use sound, play it here
                 self.buy_sound.play()
                 if joker_obj is not None and joker_obj.name in self.removed_offers:
                     self.removed_offers.discard(joker_obj.name)
