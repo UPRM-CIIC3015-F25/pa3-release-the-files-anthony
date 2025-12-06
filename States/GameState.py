@@ -12,6 +12,9 @@ from Levels.SubLevel import Blind
 
 
 HAND_SCORES = {
+    "Flush Five": {"chips": 160, "multiplier": 16, "level": 1},
+    "Flush House": {"chips": 140, "multiplier": 14, "level": 1},
+    "Five of a Kind": {"chips": 120, "multiplier": 12, "level": 1},
     "Straight Flush": {"chips": 100, "multiplier": 8, "level": 1},
     "Four of a Kind": {"chips": 60, "multiplier": 7, "level": 1},
     "Full House": {"chips": 40, "multiplier": 4, "level": 1},

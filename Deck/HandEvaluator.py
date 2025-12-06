@@ -3,6 +3,9 @@ from Cards.Card import Card, Rank, Suit, Enhancement
 import random
 
 HAND_VALUES = {
+    "Flush Five": 12,
+    "Flush House": 11,
+    "Five of a Kind": 10,
     "Straight Flush": 9,
     "Four of a Kind": 8,
     "Full House": 7,
@@ -58,7 +61,7 @@ def evaluate_hand(hand: list[Card]):
             case 4:
                 current_hands.add("Four of a Kind")
             case 5:
-                pass
+                current_hands.add("Five of a Kind")
 
     # Check for flushes
     for suit in suit_counts:
@@ -68,6 +71,9 @@ def evaluate_hand(hand: list[Card]):
     # Check for Flush House
     if ("Flush" in current_hands) and ("Full House" in current_hands):
         current_hands.add("Flush House")
+
+    if ("Flush" in current_hands) and ("Five of a Kind" in current_hands):
+        current_hands.add("Flush Five")
 
     # Check for straights and royal
     royal_list = {Rank.ACE, Rank.KING, Rank.QUEEN, Rank.JACK, Rank.TEN}
@@ -107,7 +113,6 @@ def evaluate_hand(hand: list[Card]):
     max_hand_value: int = HAND_VALUES[max_hand]
     for play_hand in current_hands:
         score_hand = "Straight Flush" if (play_hand == "Royal Flush") else play_hand
-        score_hand = "Full House" if (play_hand == "Flush House") else play_hand
         if HAND_VALUES[score_hand] > max_hand_value:
             max_hand_value = HAND_VALUES[score_hand]
             max_hand = play_hand
