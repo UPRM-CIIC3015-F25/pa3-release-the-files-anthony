@@ -370,7 +370,7 @@ class GameState(State):
         self.debugState.update()
 
     def draw(self):
-        print(f"🎮 GameState.draw() called, showReviveOption={self.showReviveOption}")
+        # print(f"🎮 GameState.draw() called, showReviveOption={self.showReviveOption}")
         # mess with this later (Change the bg to black)
         if self.showReviveOption:
             print(f"🎮 Showing game over screen!")
