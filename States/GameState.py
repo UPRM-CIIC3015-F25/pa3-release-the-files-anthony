@@ -46,6 +46,8 @@ class GameState(State):
         self.playerConsumables = []
         self.jokers = {}
         self.consumables = {}
+        self.max_jokers = 2
+        self.max_consumables = 3
         # track which jokers activated for the current played hand (used to offset their draw)
         self.activated_jokers = set()
         self.card_usage_history = []
@@ -61,13 +63,13 @@ class GameState(State):
         self.on_update = None
 
         # Tarot card tests
-        test_tarots = ["The World", "The World", "Star Platinum", "Judgment", "Judgement", "Judgment"]
-        for tarot_name in test_tarots:
-            if tarot_name in TAROTS:
-                self.consumableDeck.append(TAROTS[tarot_name])
+        #test_tarots = ["The World", "The World", "Star Platinum", "Judgment", "Judgement", "Judgment"]
+        #for tarot_name in test_tarots:
+        #    if tarot_name in TAROTS:
+        #        self.consumableDeck.append(TAROTS[tarot_name])
 
         # Add to playerConsumables
-        self.playerConsumables.extend(test_tarots)
+        #self.playerConsumables.extend(test_tarots)
 
         # Soul logic
         self.showReviveOption = False
@@ -511,7 +513,7 @@ class GameState(State):
             State.screen.blit(scaled, rect)
 
         # count/title text (keeps old placement just under container)
-        jokerTitleText = self.playerInfo.textFont1.render((str(len(self.playerJokers))) + "/ 2", True, 'white')
+        jokerTitleText = self.playerInfo.textFont1.render((str(len(self.playerJokers))) + "/ " + str(self.max_jokers), True, 'white')
         self.screen.blit(jokerTitleText, (self.jokerContainer.x + 1, self.jokerContainer.y + self.jokerContainer.height + 0))
 
     # DONE: Draw the consumable slot with really similar logic to drawJokers
@@ -570,7 +572,7 @@ class GameState(State):
             State.screen.blit(scaled, rect)
 
         # count/title text (keeps old placement just under container)
-        consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ 2", True, 'white')
+        consumableTitleText = self.playerInfo.textFont1.render((str(len(self.playerConsumables))) + "/ " + str(self.max_consumables), True, 'white')
         self.screen.blit(consumableTitleText, (self.consumableContainer.x + 1, self.consumableContainer.y + self.consumableContainer.height + 0))
 
     def drawHeatDisplay(self):
@@ -1835,7 +1837,7 @@ class GameState(State):
     def handleJudgmentEffect(self):
         """Handle Judgment tarot - create random joker"""
         # Check if player has room for more jokers (max 5)
-        if len(self.playerJokers) < 5:
+        if len(self.playerJokers) < self.max_jokers:
             available_jokers = [j for j in self.jokerDeck if j.name not in self.playerJokers]
             if available_jokers:
                 new_joker = random.choice(available_jokers)
@@ -1872,7 +1874,7 @@ class GameState(State):
             print("The Emperor: No room for more consumables (max 5)")
 
     def handleFoolEffect(self):
-        if len(self.playerConsumables) < 5:
+        if len(self.playerConsumables) < self.max_consumables:
             for card_name in reversed(self.card_usage_history):
                 if card_name != "The Fool" and (card_name in TAROTS or card_name in PLANETS):
                     if card_name not in self.playerConsumables:

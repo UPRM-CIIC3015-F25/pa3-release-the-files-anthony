@@ -575,7 +575,7 @@ class ShopState(State):
                 else:
                     price = None
                 # Planet or Tarot card
-                if price is None or price < 4 or price == 12 and len(self.game_state.playerConsumables) < 2:
+                if price is None or price < 4 or price == 12 and len(self.game_state.playerConsumables) < self.game_state.max_consumables:
                     if price:
                         self.playerInfo.playerMoney -= price
                         self.buy_sound.play()
@@ -605,7 +605,7 @@ class ShopState(State):
                         self.removed_offers.add(joker_obj.name)
 
                 else:
-                    if self.playerInfo.playerMoney >= price and len(self.game_state.playerJokers) < 2:
+                    if self.playerInfo.playerMoney >= price and len(self.game_state.playerJokers) < self.game_state.max_jokers:
                         self.game_state.playerJokers.append(joker_obj.name)
                         self.playerInfo.playerMoney -= price
                         if joker_obj in self.shop_random_jokers:
