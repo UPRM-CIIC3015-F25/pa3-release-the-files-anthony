@@ -62,7 +62,6 @@ class BossRushState(GameState):
         self.restoring_from_save = False
         self.coming_from_run_info = False
 
-        self.max_consumables = 5  # Override: give the player 5 consumables, as they are going to need it
 
         # Always check State.player_info first (like all states should)
         if hasattr(State, 'player_info') and State.player_info:
@@ -81,6 +80,9 @@ class BossRushState(GameState):
 
         # ===== SET State.player_info (don't be a dummy) =====
         State.player_info = self.playerInfo
+
+        # ---------------- Overrides ---------------
+        self.max_consumables = 5  # Give the player 5 consumables, as they are going to need it
 
         if (self.playerInfo and hasattr(self.playerInfo, 'saved_boss_rush_state') and  self.playerInfo.saved_boss_rush_state):
             self.restoring_from_save = True
