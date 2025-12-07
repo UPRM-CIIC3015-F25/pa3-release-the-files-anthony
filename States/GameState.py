@@ -371,10 +371,8 @@ class GameState(State):
         self.debugState.update()
 
     def draw(self):
-        # print(f"🎮 GameState.draw() called, showReviveOption={self.showReviveOption}")
         # mess with this later (Change the bg to black)
         if self.showReviveOption:
-            print(f"🎮 Showing game over screen!")
             self.screen.fill((0, 0, 0))
             tint = pygame.Surface((1300, 750), pygame.SRCALPHA)
             tint.fill((255, 0, 0, 180))
