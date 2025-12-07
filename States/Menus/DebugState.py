@@ -1,5 +1,6 @@
 import pygame
 from States.Core.StateClass import State
+from Levels.SubLevel import Blind
 
 
 #---------- Debug Overlay State ----------
@@ -124,17 +125,33 @@ class DebugState(State):
                     levelManager = player.levelManager
 
                     if hasattr(self.game_state, 'is_boss_rush') and self.game_state.is_boss_rush:
-                        print("[DEBUG] In Boss Rush mode - requesting boss skip")
                         self.game_state.debug_skip_requested = True
+                        heat_to_add = 50
+                        player.heat = min(player.heat + heat_to_add, player.max_heat)
+                        self.game_state.check_heat_level_up()
                     else:
                         # Normal game skip logic
                         if levelManager.curSubLevel is not None:
+                            current_blind = levelManager.curSubLevel.blind
+                            is_boss_blind = current_blind == Blind.BOSS
+
+                            if is_boss_blind:
+                                souls_to_add = 5
+                                player.souls += souls_to_add
+                                heat_to_add = 50
+                            else:
+                                heat_to_add = 25
+
                             player.roundScore = levelManager.curSubLevel.score
                             levelManager.update()
+                            player = self.game_state.playerInfo
+
+                            player.heat = min(player.heat + heat_to_add, player.max_heat)
+                            self.game_state.check_heat_level_up()
                         else:
                             player.levelFinished = True
 
-                        # GameWinState
+                            # GameWinState
                         if player.levelManager.playerWins:
                             self.game_state.nextState = "GameWinState"
                             self.game_state.isFinished = True

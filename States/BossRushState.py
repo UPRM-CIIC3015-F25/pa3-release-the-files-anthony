@@ -7,80 +7,80 @@ import os
 
 BOSS_RUSH_BOSSES = [
     {
-        "name": "Iudex Gundyr",
-        "score": 1200,
+        "name": "Champion Gundyr",
+        "score": 700,
         "theme": "gundyr.mp3",
         "background": "Graphics/Backgrounds/boss_rush/GundyrBG.png",
         "ability": "aggression"
     },
     {
         "name": "Artorias",
-        "score": 5500,
+        "score": 2500,
         "theme": "artorias.mp3",
         "background": "Graphics/Backgrounds/boss_rush/Artorias.png",
         "ability": "disables_random_joker"
     },
     {
         "name": "Sir Alonne",
-        "score": 6000,
+        "score": 5000,
         "theme": "sir_alonnes_theme.mp3",
-        "background": "Graphics/Backgrounds/boss_rush/sir_alone.png",
+        "background": "graphics/backgrounds/boss_rush/sir_alonne.png",
         "ability": "honorable_duel"
     },
     {
         "name": "Prince Lothric",
-        "score": 6500,
+        "score": 5150,
         "theme": "lothric.mp3",
         "background": "Graphics/Backgrounds/boss_rush/LothricBG.png",
         "ability": "double_target"
     },
     {
         "name": "Nameless King",
-        "score": 8000,
+        "score": 7500,
         "theme": "nameless_king.mp3",
-        "background": "Graphics/Backgrounds/boss_rush/Nameless_kingBG.png",
+        "background": "graphics/backgrounds/boss_rush/Namless_kingBG.png",
         "ability": "reduces_hand_size"
     },
     {
         "name": "Soul of Cinder",
-        "score": 9000,
+        "score": 8500,
         "theme": "SoC.mp3",
         "background": "Graphics/Backgrounds/boss_rush/SoCBG.png",
         "ability": "phase_changes"
     },
     {
         "name": "Slave Knight Gael",
-        "score": 1000,
+        "score": 10000,
         "theme": "Gael.mp3",
         "background": "Graphics/Backgrounds/boss_rush/GaelBG.png",
         "ability": "first_hand_penalty"
     }
 ]
 
-
 class BossRushState(GameState):
     def __init__(self, nextState: str = "", playerInfo=None):
         self.restoring_from_save = False
+        self.coming_from_run_info = False
 
         # Always check State.player_info first (like all states should)
         if hasattr(State, 'player_info') and State.player_info:
             playerInfo = State.player_info
         elif playerInfo:
-            # Set it in State for consistency
             State.player_info = playerInfo
         else:
             return
 
+        if hasattr(State, 'just_going_to_run_info') and State.just_going_to_run_info:
+            self.coming_from_run_info = True
+            State.just_going_to_run_info = False
+
         # Call parent init (GameState.__init__)
         super().__init__(nextState, playerInfo)
 
-        # ===== SET State.player_info LIKE GameState DOES =====
-        # GameState sets this, so we should too for consistency
+        # ===== SET State.player_info (don't be a dummy) =====
         State.player_info = self.playerInfo
 
-        if (self.playerInfo and
-                hasattr(self.playerInfo, 'saved_boss_rush_state') and
-                self.playerInfo.saved_boss_rush_state):
+        if (self.playerInfo and hasattr(self.playerInfo, 'saved_boss_rush_state') and  self.playerInfo.saved_boss_rush_state):
             self.restoring_from_save = True
             saved = self.playerInfo.saved_boss_rush_state
 
@@ -152,17 +152,16 @@ class BossRushState(GameState):
         # ===== NORMAL INITIALIZATION =====
         self.is_boss_rush = True
 
-        if self.playerInfo and getattr(self.playerInfo, 'is_boss_rush', False):
-            # Continuing boss rush
+        if self.restoring_from_save:
+            # Restoring from X button save
             self.current_boss_index = getattr(self.playerInfo, 'boss_rush_current_index', 0)
             self.bosses_defeated = getattr(self.playerInfo, 'boss_rush_bosses_defeated', 0)
             self.total_souls_earned = getattr(self.playerInfo, 'boss_rush_total_souls', 0)
             self.total_money = getattr(self.playerInfo, 'boss_rush_total_money', 0)
             self.total_jokers_used = getattr(self.playerInfo, 'boss_rush_total_jokers', 0)
             self.total_tarots_used = getattr(self.playerInfo, 'boss_rush_total_tarots', 0)
-
         else:
-            # Fresh boss rush
+            # Fresh start (including after losing)
             self.current_boss_index = 0
             self.bosses_defeated = 0
             self.total_souls_earned = 0
@@ -171,6 +170,7 @@ class BossRushState(GameState):
             self.total_tarots_used = 0
 
             if self.playerInfo:
+                self.playerInfo.boss_rush_revive_used = False
                 self.playerInfo.is_boss_rush = True
 
         # Initialize boss tracking
@@ -184,32 +184,11 @@ class BossRushState(GameState):
         self.disabled_joker_this_round = False
         self.phase_changed = False
         self.disabled_jokers = []
+        self.boss_rush_game_over = False
 
         if not self.restoring_from_save:
-            if self.playerInfo and getattr(self.playerInfo, 'is_boss_rush', False):
-                # Continuing boss rush
-                self.current_boss_index = getattr(self.playerInfo, 'boss_rush_current_index', 0)
-                self.bosses_defeated = getattr(self.playerInfo, 'boss_rush_bosses_defeated', 0)
-                self.total_souls_earned = getattr(self.playerInfo, 'boss_rush_total_souls', 0)
-                self.total_money = getattr(self.playerInfo, 'boss_rush_total_money', 0)
-                self.total_jokers_used = getattr(self.playerInfo, 'boss_rush_total_jokers', 0)
-                self.total_tarots_used = getattr(self.playerInfo, 'boss_rush_total_tarots', 0)
-            else:
-                # Fresh boss rush
-                self.current_boss_index = 0
-                self.bosses_defeated = 0
-                self.total_souls_earned = 0
-                self.total_money = 0
-                self.total_jokers_used = 0
-                self.total_tarots_used = 0
-
-                if self.playerInfo:
-                    self.playerInfo.is_boss_rush = True
-
             self.initialize_boss_rush()  # This loads background and music
         else:
-            # We restored from save - music should already be playing
-            # Just set the boss rush tracking variables
             if self.playerInfo:
                 self.playerInfo.is_boss_rush = True
                 self.current_boss_index = getattr(self.playerInfo, 'boss_rush_current_index', 0)
@@ -236,8 +215,10 @@ class BossRushState(GameState):
                 self.backgroundImage = pygame.image.load('Graphics/Backgrounds/gameplayBG.jpg')
                 self.background = pygame.transform.scale(self.backgroundImage, (1300, 750))
 
-            # Set boss music path but DON'T switch theme (music is already playing)
             self.bossMusic_path = f"Graphics/Sounds/{boss['theme']}"
+
+        if not self.coming_from_run_info:
+            self.switchToBossTheme()
 
         self.restoring_from_save = False
 
@@ -283,20 +264,12 @@ class BossRushState(GameState):
         self.playerInfo.levelManager.curSubLevel.score = boss["score"]
         self.playerInfo.score = boss["score"]
 
-        # Reset player state for new boss (but keep money, jokers, consumables!)
+        # Reset player state for new boss
         self.playerInfo.roundScore = 0
         self.playerInfo.playerChips = 0
         self.playerInfo.playerMultiplier = 0
         self.playerInfo.amountOfHands = 4
         self.playerInfo.amountOfDiscards = 4
-
-        # SPECIAL CASE: Start Soul of Cinder in Phase 3 for testing
-        if boss["name"] == "Soul of Cinder":
-            self.boss_phase = 1
-            # Set progress to 50% so phase logic recognizes we're in Phase 3
-            self.playerInfo.roundScore = int(boss["score"] * 0.5)
-            # Apply Phase 2 effect since we skipped Phase 2
-            self.disable_random_joker()
 
         # Reset game state (new deck and hand)
         self.deck = self.deckManager.shuffleDeck(self.deckManager.createDeck(self.playerInfo.levelManager.curSubLevel))
@@ -306,7 +279,6 @@ class BossRushState(GameState):
             # Nameless King: Start with only 6 cards instead of 8
             self.hand = self.deckManager.dealCards(self.deck, 6, self.playerInfo.levelManager.curSubLevel)
         else:
-            # All other bosses start with 8 cards
             self.hand = self.deckManager.dealCards(self.deck, 8, self.playerInfo.levelManager.curSubLevel)
 
         self.used = []
@@ -318,7 +290,7 @@ class BossRushState(GameState):
         self.bossMusic_path = f"Graphics/Sounds/{boss['theme']}"
 
         # Switch to boss theme music
-        if not self.restoring_from_save:
+        if not self.restoring_from_save or not self.coming_from_run_info:
             self.switchToBossTheme()
 
         # Reset play hand state
@@ -397,11 +369,6 @@ class BossRushState(GameState):
                 # Show visual effect
                 self.show_double_target_effect()
 
-            # Revert if player gets more hands (from jokers/items)
-            elif self.playerInfo.amountOfHands > 1 and current_target == doubled_score:
-                self.playerInfo.levelManager.curSubLevel.score = original_score
-                self.playerInfo.score = original_score
-
     def check_gundyr_aggression(self):
         """Check if player is taking too long for Gundyr or Soul of Cinder Phase 3"""
         current_time = pygame.time.get_ticks()
@@ -426,22 +393,24 @@ class BossRushState(GameState):
                     print(f"Gundyr discard error: {e}")
             self.last_hand_time = current_time
 
-        # Soul of Cinder Phase 3 time pressure: 7 seconds
+        # Soul of Cinder Phase 3 time pressure: 10 seconds
         elif (self.current_boss_ability == "phase_changes" and
               self.boss_phase == 3 and
-              time_since_last_hand > 7000):
+              time_since_last_hand > 10000):
             if self.hand and len(self.hand) > 0:
                 try:
                     card = random.choice(self.hand)
                     self.hand.remove(card)
                     self.deck.append(card)
+                    if len(self.hand) == 0 and not self.gameOverTriggered:
+                        self.trigger_card_depletion_game_over()
+                        return
                     self.updateCards(400, 520, self.cards, self.hand, scale=1.2)
                 except (ValueError, IndexError) as e:
                     print(f"Soul of Cinder Phase 3 discard error: {e}")
             self.last_hand_time = current_time
 
     def playHand(self):
-        """Override playHand to add boss rush abilities"""
         # Track hands played for this boss
         self.hands_played_this_boss += 1
 
@@ -489,23 +458,6 @@ class BossRushState(GameState):
         # Call parent's playHand
         super().playHand()
 
-        # ===== FIX: CHECK FOR LOTHRIC'S ABILITY RIGHT AFTER PLAYING A HAND =====
-        if self.current_boss_ability == "double_target":
-            current_target = self.playerInfo.levelManager.curSubLevel.score
-            original_score = BOSS_RUSH_BOSSES[self.current_boss_index]["score"]
-            doubled_score = original_score * 2
-
-            # Check if player has 1 hand remaining AFTER playing this hand
-            if self.playerInfo.amountOfHands == 1 and current_target != doubled_score:
-                # DOUBLE THE TARGET!
-                self.playerInfo.levelManager.curSubLevel.score = doubled_score
-                self.playerInfo.score = doubled_score
-
-                # Show visual effect
-                self.show_double_target_effect()
-                print(f"Prince Lothric: Target doubled to {doubled_score}!")
-        # ===== END FIX =====
-
         # Apply post-hand abilities
         self.apply_post_hand_abilities()
 
@@ -529,44 +481,38 @@ class BossRushState(GameState):
                 # Also update visual selection
                 self.cardsSelectedRect = {k: v for k, v in list(self.cardsSelectedRect.items())[:4]}
 
-
     def apply_post_hand_abilities(self):
-        """Apply abilities that affect the score after playing"""
         if not self.current_boss_ability:
             return
 
-        # Slave Knight Gael - First hand penalty
+        # Restore Gael's chips/multiplier after scoring
         if self.current_boss_ability == "first_hand_penalty":
-            if self.hands_played_this_boss == 1:
-                # Store original values before penalty
-                chips_before = self.playerInfo.playerChips
-                pending_before = self.pending_round_add
+            if self.hands_played_this_boss:
+                if hasattr(self, 'original_chips'):
+                    self.playerInfo.playerChips = self.original_chips
+                    del self.original_chips
+                if hasattr(self, 'original_mult'):
+                    self.playerInfo.playerMultiplier = self.original_mult
+                    del self.original_mult
 
-                # Apply -50% penalty to both displayed chips and pending score
-                self.playerInfo.playerChips = max(0, int(self.playerInfo.playerChips * 0.5))
-                self.pending_round_add = max(0, int(self.pending_round_add * 0.5))
-
-                # Show penalty text in red (exactly like Gael)
-                penalty_text = f"(PENALIZED -50%) -> +{self.pending_round_add}"
+                # Show penalty text
+                penalty_text = f"(GAEL PENALTY -50%) -> +{self.pending_round_add}"
                 self.scoreBreakdownTextSurface = self.playerInfo.textFont2.render(
-                    penalty_text, True, (255, 100, 100)  # Red color for penalty
+                    penalty_text, True, (255, 100, 100)
                 )
 
-        # Soul of Cinder Phase 3: -5% score reduction
+        # Restore Soul of Cinder's multiplier
         if self.current_boss_ability == "phase_changes" and self.boss_phase == 3:
-            if hasattr(self, 'pending_round_add') and self.pending_round_add > 0:
-                # Apply -5% penalty
-                original = self.pending_round_add
-                self.pending_round_add = max(1, int(self.pending_round_add * 0.95))
+            if hasattr(self, 'original_mult_soc'):
+                self.playerInfo.playerMultiplier = self.original_mult_soc
+                del self.original_mult_soc
 
-                # Show penalty text in red (exactly like Gael but with -5%)
-                penalty_text = f"(PENALIZED -5%) -> +{self.pending_round_add}"
-                self.scoreBreakdownTextSurface = self.playerInfo.textFont2.render(
-                    penalty_text, True, (255, 100, 100)  # Red color for penalty
-                )
-
+            # Show penalty text
+            penalty_text = f"(SOUL OF CINDER -5%) -> +{self.pending_round_add}"
+            self.scoreBreakdownTextSurface = self.playerInfo.textFont2.render(
+                penalty_text, True, (255, 100, 100)
+            )
     def check_soul_of_cinder_phases(self):
-        """Check and apply Soul of Cinder phase changes"""
         if self.current_boss_ability != "phase_changes":
             return
 
@@ -590,7 +536,7 @@ class BossRushState(GameState):
             # Phase 3: Time pressure + -5% score reduction
             self.last_hand_time = pygame.time.get_ticks()
 
-        # Phase 3 → Phase 4 at 75% progress
+        # Phase 4 at 75% progress
         elif self.boss_phase == 3 and current_progress >= 0.75:
             self.boss_phase = 4
             self.phase_changed = True
@@ -601,7 +547,7 @@ class BossRushState(GameState):
         self.boss_defeated_this_round = True
         shop_money = 100
 
-        # Award souls for defeating this boss
+        # Awards for defeating this boss
         souls_earned = 5 + (self.current_boss_index * 2)
         self.playerInfo.souls += souls_earned
         self.total_souls_earned += souls_earned
@@ -738,6 +684,18 @@ class BossRushState(GameState):
             pygame.time.wait(100)
 
     def win_screen(self):
+        try:
+            pygame.mixer.music.stop()
+            victory_music_path = "graphics/Sounds/nameless_song.mp3"
+            if os.path.exists(victory_music_path):
+                pygame.mixer.music.load(victory_music_path)
+                pygame.mixer.music.play(-1)
+                pygame.mixer.music.set_volume(0.7)
+            else:
+                print(f"Nameless song not found: {victory_music_path}")
+        except Exception as e:
+            print(f"Error playing Nameless song: {e}")
+
         # Clear screen to black
         self.screen.fill((0, 0, 0))
 
@@ -746,38 +704,34 @@ class BossRushState(GameState):
         title = title_font.render("BOSS RUSH COMPLETE!", True, (255, 215, 0))
         self.screen.blit(title, (650 - title.get_width() // 2, 100))
 
-        # Draw stats
-        stats_font = pygame.font.Font('Graphics/Text/m6x11.ttf', 48)
-        small_font = pygame.font.Font('Graphics/Text/m6x11.ttf', 36)
 
-        # Money earned
+        stats_font = pygame.font.Font('Graphics/Text/m6x11.ttf', 48)
+
         congrats = stats_font.render(f"Thank you for playing Boss Rush! (This was a bitch to make...)",
                                      True,
                                      (100, 255, 100))
+        ps = stats_font.render(f"I ' M  I N  Y O U R  W A L L S, - Revel",
+                               True,
+                               (136, 8, 8))
         self.screen.blit(congrats, (650 - congrats.get_width() // 2, 250))
+        self.screen.blit(ps, (950 - congrats.get_width() // 2, 200))
 
-        # Souls earned
         souls_text = stats_font.render(f"Souls Earned: {self.total_souls_earned}", True, (255, 215, 0))
         self.screen.blit(souls_text, (650 - souls_text.get_width() // 2, 320))
 
-        # ===== DRAW EVERYTHING FIRST =====
-
-        # Continue prompt (blinking)
-        prompt_font = pygame.font.Font('Graphics/Text/m6x11.ttf', 32)
-        current_time = pygame.time.get_ticks()
-
-        if (current_time // 600) % 2 == 0:  # Blink every 600ms
-            prompt = prompt_font.render("Press SPACE to return to Main Menu", True, (200, 200, 255))
-            self.screen.blit(prompt, (650 - prompt.get_width() // 2, 600))
-
-        # ===== THEN APPLY TV OVERLAY =====
         self.screen.blit(self.tvOverlay, (0, 0))
-
         pygame.display.update()
 
-        # Wait for space key
+        start_time = pygame.time.get_ticks()
+        show_L_prompt = False
+
         waiting = True
         while waiting:
+            current_time = pygame.time.get_ticks()
+
+            if not show_L_prompt and (current_time - start_time) > 1000:
+                show_L_prompt = True
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -787,29 +741,112 @@ class BossRushState(GameState):
                         waiting = False
                         break
 
-            # Re-draw JUST the prompt area (not the whole screen)
-            self.screen.fill((0, 0, 0), (0, 590, 1300, 80))  # Clear prompt area
-            current_time = pygame.time.get_ticks()
+                    if event.key == pygame.K_l and show_L_prompt:
+                        pygame.mixer.music.fadeout(500)
 
-            # Draw blinking prompt if needed
-            if (current_time // 600) % 2 == 0:
-                prompt = prompt_font.render("Press SPACE to return to Main Menu", True, (200, 200, 255))
-                self.screen.blit(prompt, (650 - prompt.get_width() // 2, 600))
+                        self.play_video_fullscreen()
 
-            # ===== RE-APPLY TV OVERLAY OVER UPDATED AREA =====
-            # Clear and redraw TV overlay over the prompt area
-            overlay_portion = pygame.Surface((1300, 80), pygame.SRCALPHA)
-            overlay_portion.blit(self.tvOverlay, (0, 0), (0, 590, 1300, 80))
-            self.screen.blit(overlay_portion, (0, 590))
+                        self.return_to_main_menu()
+                        return
+
+            self.screen.fill((0, 0, 0), (0, 550, 1300, 200))
+
+            prompt_font = pygame.font.Font('Graphics/Text/m6x11.ttf', 32)
+            blink_on = (current_time // 600) % 2 == 0
+
+            if blink_on:
+                space_prompt = prompt_font.render("Press SPACE to return to Main Menu", True, (200, 200, 255))
+                self.screen.blit(space_prompt, (650 - space_prompt.get_width() // 2, 600))
+
+            if show_L_prompt and blink_on:
+                L_prompt = prompt_font.render("Press L for ???", True, (255, 100, 100))
+                self.screen.blit(L_prompt, (650 - L_prompt.get_width() // 2, 650))
+
+            overlay_portion = pygame.Surface((1300, 200), pygame.SRCALPHA)
+            overlay_portion.blit(self.tvOverlay, (0, 0), (0, 550, 1300, 200))
+            self.screen.blit(overlay_portion, (0, 550))
 
             pygame.display.update()
             pygame.time.wait(50)
 
-        # Return to main menu
         self.return_to_main_menu()
 
+    def play_video_fullscreen(self):
+        try:
+            import cv2
+            import numpy as np
+
+            video_path = "graphics/secret/Venom.mp4"
+            audio_path = "graphics/secret/Venom_audio.mp3"
+
+            if not os.path.exists(video_path):
+                print(f"Video not found: {video_path}")
+                return False
+
+            if os.path.exists(audio_path):
+                pygame.mixer.music.load(audio_path)
+                pygame.mixer.music.play()
+
+            cap = cv2.VideoCapture(video_path)
+
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            if fps <= 0:
+                fps = 30
+
+            clock = pygame.time.Clock()
+            frame_count = 0
+
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pass
+
+                frame_count += 1
+
+                # Convert and process frame
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (1300, 750))
+                frame = np.rot90(frame)
+                frame_surface = pygame.surfarray.make_surface(frame)
+
+                self.screen.blit(frame_surface, (0, 0))
+                pygame.display.flip()
+
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        cap.release()
+                        pygame.mixer.music.stop()
+                        return True
+
+                clock.tick(fps)
+
+            cap.release()
+            pygame.mixer.music.stop()
+            return True
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+
+    def show_video_fallback(self):
+        self.screen.fill((0, 0, 0))
+
+        font = pygame.font.Font('Graphics/Text/m6x11.ttf', 40)
+        text1 = font.render("Kept you waiting huh...", True, (255, 215, 0))
+        text2 = font.render("(Video playback unavailable)", True, (200, 200, 200))
+
+        self.screen.blit(text1, (650 - text1.get_width() // 2, 300))
+        self.screen.blit(text2, (650 - text2.get_width() // 2, 360))
+
+        pygame.display.update()
+        pygame.time.wait(2000)
+
     def return_to_main_menu(self):
-        """Clean return to main menu"""
         # Switch to normal theme
         super().switchToNormalTheme(force=True)
 
@@ -819,11 +856,45 @@ class BossRushState(GameState):
 
         # Reset player's boss rush flag
         if self.playerInfo:
+
             self.playerInfo.is_boss_rush = False
+
+            # Reset all player resources
+            self.playerInfo.souls = 0
+            self.playerInfo.playerMoney = 0
+            self.playerInfo.heat = 0
+
+            # Reset run-specific stats
+            self.playerInfo.roundScore = 0
+            self.playerInfo.playerChips = 0
+            self.playerInfo.playerMultiplier = 0
+
+            # Clear all collections
+            self.playerInfo.jokers = []
+            self.playerInfo.tarots = []
+            self.playerInfo.consumables = []
+
+            attrs_to_clear = [
+                'is_boss_rush',
+                'boss_rush_current_index',
+                'boss_rush_bosses_defeated',
+                'boss_rush_total_souls',
+                'boss_rush_total_money',
+                'boss_rush_total_jokers',
+                'boss_rush_total_tarots',
+                'boss_rush_coming_from_shop',
+                'saved_player_jokers',
+                'saved_player_consumables',
+                'saved_boss_rush_state'
+            ]
+
+            for attr in attrs_to_clear:
+                if hasattr(self.playerInfo, attr):
+                    delattr(self.playerInfo, attr)
 
     def draw(self):
         if self.showReviveOption or self.gameOverTriggered:
-            super().draw()  # GameState will draw game over screen
+            super().draw()
             return
 
         # Normal gameplay drawing
@@ -834,15 +905,11 @@ class BossRushState(GameState):
         # Handle win screen input
         if events.type == pygame.QUIT:
 
-            # Stop boss music
-            if self.playerInfo:
-                self.playerInfo.is_boss_rush = False
+            self.save_boss_rush_progress()
 
-            # Stop music
             if pygame.mixer.music.get_busy():
                 pygame.mixer.music.fadeout(500)
 
-            # Transition to StartState
             self.isFinished = True
             super().switchToNormalTheme(force=True)
             self.nextState = "StartState"
@@ -857,34 +924,10 @@ class BossRushState(GameState):
                      mousePos[1] - self.playerInfo.playerInfo2.y)):
                 State.screenshot = self.screen.copy()
                 self.isFinished = True
+                State.just_going_to_run_info = True
                 self.nextState = "RunInfoState"
 
-                if self.playerInfo:
-                    # Save boss rush progress
-                    self.playerInfo.is_boss_rush = True
-                    self.playerInfo.boss_rush_current_index = self.current_boss_index
-                    self.playerInfo.boss_rush_bosses_defeated = self.bosses_defeated
-                    self.playerInfo.boss_rush_total_souls = self.total_souls_earned
-                    self.playerInfo.boss_rush_total_money = self.total_money
-
-                    # Save game state (cards, deck, etc.)
-                    self.playerInfo.saved_boss_rush_state = {
-                        'hand': self.hand.copy(),
-                        'deck': self.deck.copy(),
-                        'used': self.used.copy(),
-                        'cardsSelectedList': self.cardsSelectedList.copy(),
-                        'playerJokers': self.playerJokers.copy(),
-                        'playerConsumables': self.playerConsumables.copy(),
-                        'hands_played_this_boss': self.hands_played_this_boss,
-                        'boss_phase': self.boss_phase,
-                        'last_hand_time': self.last_hand_time,
-                        'disabled_jokers': self.disabled_jokers.copy(),
-                        'roundScore': self.playerInfo.roundScore,
-                        'playerChips': self.playerInfo.playerChips,
-                        'playerMultiplier': self.playerInfo.playerMultiplier,
-                        'amountOfHands': self.playerInfo.amountOfHands,
-                        'amountOfDiscards': self.playerInfo.amountOfDiscards
-                    }
+                self.save_boss_rush_progress()
 
                 return
 
@@ -897,6 +940,7 @@ class BossRushState(GameState):
                 for event in events_list:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                         self.win_screen()
+
                         return
 
                 return
@@ -911,10 +955,9 @@ class BossRushState(GameState):
 
             # Load and play the boss theme
             pygame.mixer.music.load(self.bossMusic_path)
-            pygame.mixer.music.play(-1)  # Loop indefinitely
+            pygame.mixer.music.play(-1)
             pygame.mixer.music.set_volume(0.7)
         except Exception as e:
-            # Fall back to default theme if boss theme fails
             super().switchToNormalTheme()
 
     def userInputCards(self, events):
@@ -1095,8 +1138,6 @@ class BossRushState(GameState):
         self.showReviveOption = True
         self.gameOverTriggered = True
         self.showRedTint = True
-
-        # NEW: Set a flag to stop BossRushState.update()
         self.boss_rush_game_over = True
 
         pygame.mixer.music.stop()
@@ -1114,3 +1155,41 @@ class BossRushState(GameState):
 
         # Call parent implementation
         super().discardCards(removeFromHand)
+
+    def save_boss_rush_progress(self):
+        # Added this for better saving
+        if not self.playerInfo:
+            return
+
+        print("💾 SAVING boss rush progress...")
+
+        # Save boss rush tracking
+        self.playerInfo.is_boss_rush = True
+        self.playerInfo.boss_rush_current_index = self.current_boss_index
+        self.playerInfo.boss_rush_bosses_defeated = self.bosses_defeated
+        self.playerInfo.boss_rush_total_souls = self.total_souls_earned
+        self.playerInfo.boss_rush_total_money = self.total_money
+        self.playerInfo.boss_rush_total_jokers = self.total_jokers_used
+        self.playerInfo.boss_rush_total_tarots = self.total_tarots_used
+
+        # Save current jokers and consumables
+        self.playerInfo.saved_player_jokers = self.playerJokers.copy() if hasattr(self, 'playerJokers') else []
+        self.playerInfo.saved_player_consumables = self.playerConsumables.copy() if hasattr(self,'playerConsumables') else []
+
+        self.playerInfo.saved_boss_rush_state = {
+            'hand': self.hand.copy() if hasattr(self, 'hand') else [],
+            'deck': self.deck.copy() if hasattr(self, 'deck') else [],
+            'used': self.used.copy() if hasattr(self, 'used') else [],
+            'cardsSelectedList': self.cardsSelectedList.copy() if hasattr(self, 'cardsSelectedList') else [],
+            'playerJokers': self.playerJokers.copy() if hasattr(self, 'playerJokers') else [],
+            'playerConsumables': self.playerConsumables.copy() if hasattr(self, 'playerConsumables') else [],
+            'hands_played_this_boss': self.hands_played_this_boss if hasattr(self, 'hands_played_this_boss') else 0,
+            'boss_phase': self.boss_phase if hasattr(self, 'boss_phase') else 1,
+            'last_hand_time': self.last_hand_time if hasattr(self, 'last_hand_time') else pygame.time.get_ticks(),
+            'disabled_jokers': self.disabled_jokers.copy() if hasattr(self, 'disabled_jokers') else [],
+            'roundScore': self.playerInfo.roundScore,
+            'playerChips': self.playerInfo.playerChips,
+            'playerMultiplier': self.playerInfo.playerMultiplier,
+            'amountOfHands': self.playerInfo.amountOfHands,
+            'amountOfDiscards': self.playerInfo.amountOfDiscards
+        }

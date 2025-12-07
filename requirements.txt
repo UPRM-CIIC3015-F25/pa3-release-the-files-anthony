@@ -2,3 +2,5 @@
 # The only module to import is pygame
 # Like always, 'pip install -r requirements.txt' straight into your console
 pygame
+numpy
+opencv-python

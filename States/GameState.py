@@ -320,12 +320,13 @@ class GameState(State):
                         is_boss_blind = current_blind == Blind.BOSS
 
                         if is_boss_blind:
-                            print("bigu bossu - OFFICIALLY BEAT BOSS BLIND!")
                             boss_souls = 5
                             # More heat if you beat boss blind
                             heat_gain = 50
                             self.playerInfo.souls += boss_souls
                             print(f"BOSS DEFEATED! Earned {boss_souls} souls! Total: {self.playerInfo.souls}")
+                        elif self.playerInfo.is_boss_rush:
+                            heat_gain = 50
                         else:
                             heat_gain = 25
 
@@ -1890,16 +1891,34 @@ class GameState(State):
         revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
         has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
 
+       # For boss rush
+        is_boss_rush = getattr(self.playerInfo, 'is_boss_rush', False)
+        boss_rush_revive_used = getattr(self.playerInfo, 'boss_rush_revive_used', False)
 
-        if has_revived:
-            question_text = self.playerInfo.textFont2.render("Already revived this blind!", True, (255, 150, 150))
-            souls_text = self.playerInfo.textFont2.render("One revive per blind allowed", True, (200, 150, 150))
-        elif souls >= revive_cost:
-            question_text = self.playerInfo.textFont2.render(f"Revive for {revive_cost} Souls?", True, (255, 255, 255))
-            souls_text = self.playerInfo.textFont2.render(f"You have {souls} souls", True, (200, 200, 100))
+        if is_boss_rush:
+            if boss_rush_revive_used:
+                question_text = self.playerInfo.textFont2.render("Already used Boss Rush revive!", True, (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render("(One revive per entire Boss Rush)", True, (200, 150, 150))
+            elif souls >= revive_cost:
+                question_text = self.playerInfo.textFont2.render(f"BOSS RUSH Revive for {revive_cost} Souls?", True,
+                                                                 (255, 215, 0))
+                souls_text = self.playerInfo.textFont2.render(f"(Can only revive once in Boss Rush!)", True,
+                                                              (255, 100, 100))
+            else:
+                question_text = self.playerInfo.textFont2.render("You're cooked... Better luck next time!", True, (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render(f"Can't let you revive again.", True,
+                                                              (200, 150, 150))
         else:
-            question_text = self.playerInfo.textFont2.render("Not enough souls to revive", True, (255, 150, 150))
-            souls_text = self.playerInfo.textFont2.render(f"Need {revive_cost}, you have {souls}", True, (200, 150, 150))
+            if has_revived:
+                question_text = self.playerInfo.textFont2.render("Already revived this blind!", True, (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render("One revive per blind allowed", True, (200, 150, 150))
+            elif souls >= revive_cost:
+                question_text = self.playerInfo.textFont2.render(f"Revive for {revive_cost} Souls?", True, (255, 255, 255))
+                souls_text = self.playerInfo.textFont2.render(f"You have {souls} souls", True, (200, 200, 100))
+            else:
+                question_text = self.playerInfo.textFont2.render("Not enough souls to revive", True, (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render(f"Need {revive_cost}, you have {souls}", True, (200, 150, 150))
+
         center_x = self.dialogBoxRect.centerx
         buttons_y = self.dialogBoxRect.y + 120
 
@@ -1921,6 +1940,7 @@ class GameState(State):
         self.screen.blit(question_text,(self.dialogBoxRect.centerx - question_text.get_width() // 2, self.dialogBoxRect.y + 30))
         self.screen.blit(souls_text,(self.dialogBoxRect.centerx - souls_text.get_width() // 2, self.dialogBoxRect.y + 70))
 
+        self.screen.blit(self.tvOverlay, (0, 0))
         pygame.display.update()
 
 
@@ -1929,9 +1949,40 @@ class GameState(State):
         revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
         has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
 
-        print(f"DEBUG handleRevive: souls={souls}, cost={revive_cost}, has_revived={has_revived}")
+        is_boss_rush = getattr(self.playerInfo, 'is_boss_rush', False)
+        boss_rush_revive_used = getattr(self.playerInfo, 'boss_rush_revive_used', False)
 
-        # Check if player has enough souls AND hasn't revived this blind yet
+        print(f"DEBUG handleRevive: souls={souls}, cost={revive_cost}, has_revived={has_revived}")
+        print(f"DEBUG Boss Rush: is_boss_rush={is_boss_rush}, boss_rush_revive_used={boss_rush_revive_used}")
+
+        # ===== BOSS RUSH REVIVE =====
+        if is_boss_rush:
+            if boss_rush_revive_used:
+                print("BOSS RUSH: Already used your one revive for this run!")
+                return False
+
+            if souls >= revive_cost:
+                self.gameOverTriggered = False
+                self.playerInfo.souls -= revive_cost
+                self.playerInfo.amountOfHands = 4
+                self.playerInfo.amountOfDiscards = 4
+                self.showReviveOption = False
+                self.showRedTint = False
+
+                if hasattr(self, 'switchToBossTheme'):
+                    print("DEBUG: Calling switchToBossTheme for boss rush revive")
+                    self.switchToBossTheme()
+                elif hasattr(self, 'bossMusicPlaying'):
+                    print("DEBUG: Setting bossMusicPlaying to False to force restart")
+                    self.bossMusicPlaying = False
+                    # You might need to call whatever method starts boss music
+                    if hasattr(self, 'restartBossMusic'):
+                        self.restartBossMusic()
+
+                print(f"BOSS RUSH: Revived! {self.playerInfo.souls} souls remaining")
+                return True
+            return False
+
         if souls >= revive_cost and not has_revived:
             self.gameOverTriggered = False
             self.playerInfo.souls -= revive_cost
@@ -1959,7 +2010,7 @@ class GameState(State):
             print(f"Revived! {self.playerInfo.souls} souls remaining")
             return True
 
-        elif has_revived:
+        elif has_revived and not is_boss_rush:
             print("DEBUG: Already revived this blind - resetting souls to zero")
             self.playerInfo.souls = 0
 
