@@ -838,6 +838,11 @@ class GameState(State):
                         self.playerInfo.playerChips = 0
                         self.playerInfo.playerMultiplier = 0
                         self.playerInfo.playerMoney = 0
+                        self.playerInfo.souls = 0
+                        self.playerInfo.heat = 0
+                        self.playerInfo.heat_level = 0
+                        self.playerInfo.isHeatActive = False
+                        self.playerInfo.heatDuration = 0
 
                         # reset blind
                         if self.playerInfo.levelManager.curLevel:
@@ -1879,9 +1884,10 @@ class GameState(State):
             print("The Fool: No room for more consumables (max 5)")
 
     def drawGameOverScreen(self):
-       #Back ground, going change ts later
+        # Back ground, going change ts later
         pygame.draw.rect(self.screen, (30, 30, 50), self.dialogBoxRect, border_radius=12)
         pygame.draw.rect(self.screen, (80, 80, 100), self.dialogBoxRect, 3, border_radius=12)
+        self.screen.blit(self.tvOverlay, (0, 0))
 
         mouse_pos = pygame.mouse.get_pos()
 
@@ -1889,58 +1895,74 @@ class GameState(State):
         revive_cost = getattr(self.playerInfo, 'reviveCost', 20)
         has_revived = getattr(self.playerInfo, 'hasRevivedThisBlind', False)
 
-       # For boss rush
+        # For boss rush
         is_boss_rush = getattr(self.playerInfo, 'is_boss_rush', False)
         boss_rush_revive_used = getattr(self.playerInfo, 'boss_rush_revive_used', False)
 
+        # Determine if player can revive
+        if is_boss_rush:
+            can_revive = not boss_rush_revive_used and souls >= revive_cost
+        else:
+            can_revive = not has_revived and souls >= revive_cost
+
+        # Set up button rectangles
+        center_x = self.dialogBoxRect.centerx
+        buttons_y = self.dialogBoxRect.y + 120
+        self.yesButtonRect = pygame.Rect(center_x - 110, buttons_y, 100, 50)
+        self.noButtonRect = pygame.Rect(center_x + 10, buttons_y, 100, 50)
+
+        # Determine question text based on situation
         if is_boss_rush:
             if boss_rush_revive_used:
-                question_text = self.playerInfo.textFont2.render("Already used Boss Rush revive!", True, (255, 150, 150))
-                souls_text = self.playerInfo.textFont2.render("(One revive per entire Boss Rush)", True, (200, 150, 150))
+                question_text = self.playerInfo.textFont2.render("You're cooked... Better luck next time!", True,
+                                                                 (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render("(Skill issue)", True,
+                                                              (200, 150, 150))
             elif souls >= revive_cost:
                 question_text = self.playerInfo.textFont2.render(f"BOSS RUSH Revive for {revive_cost} Souls?", True,
                                                                  (255, 215, 0))
                 souls_text = self.playerInfo.textFont2.render(f"(Can only revive once in Boss Rush!)", True,
                                                               (255, 100, 100))
             else:
-                question_text = self.playerInfo.textFont2.render("You're cooked... Better luck next time!", True, (255, 150, 150))
-                souls_text = self.playerInfo.textFont2.render(f"Can't let you revive again.", True,
+                question_text = self.playerInfo.textFont2.render("Not enough souls...", True,
+                                                                 (255, 150, 150))
+                souls_text = self.playerInfo.textFont2.render(f"Try lasting a little longer?", True,
                                                               (200, 150, 150))
         else:
+            # Normal game
             if has_revived:
                 question_text = self.playerInfo.textFont2.render("Already revived this blind!", True, (255, 150, 150))
                 souls_text = self.playerInfo.textFont2.render("One revive per blind allowed", True, (200, 150, 150))
             elif souls >= revive_cost:
-                question_text = self.playerInfo.textFont2.render(f"Revive for {revive_cost} Souls?", True, (255, 255, 255))
+                question_text = self.playerInfo.textFont2.render(f"Revive for {revive_cost} Souls?", True,
+                                                                 (255, 255, 255))
                 souls_text = self.playerInfo.textFont2.render(f"You have {souls} souls", True, (200, 200, 100))
             else:
                 question_text = self.playerInfo.textFont2.render("Not enough souls to revive", True, (255, 150, 150))
-                souls_text = self.playerInfo.textFont2.render(f"Need {revive_cost}, you have {souls}", True, (200, 150, 150))
-
-        center_x = self.dialogBoxRect.centerx
-        buttons_y = self.dialogBoxRect.y + 120
-
-        self.yesButtonRect = pygame.Rect(center_x - 110, buttons_y, 100, 50)
-        self.noButtonRect = pygame.Rect(center_x + 10, buttons_y, 100, 50)
-
-
-        if not has_revived and souls >= revive_cost:
+                souls_text = self.playerInfo.textFont2.render(f"Need {revive_cost}, you have {souls}", True,
+                                                              (200, 150, 150))
+        # Draw YES button only if player can revive
+        if can_revive:
             yes_color = (0, 200, 0) if self.yesButtonRect.collidepoint(mouse_pos) else (0, 100, 0)
             pygame.draw.rect(self.screen, yes_color, self.yesButtonRect, border_radius=8)
             yes_text = self.playerInfo.textFont2.render("YES", True, (255, 255, 255))
-            self.screen.blit(yes_text, (self.yesButtonRect.centerx - yes_text.get_width() // 2, self.yesButtonRect.centery - yes_text.get_height() // 2))
+            self.screen.blit(yes_text, (self.yesButtonRect.centerx - yes_text.get_width() // 2,
+                                        self.yesButtonRect.centery - yes_text.get_height() // 2))
 
+        # Draw NO button (always visible)
         no_color = (200, 0, 0) if self.noButtonRect.collidepoint(mouse_pos) else (150, 0, 0)
         pygame.draw.rect(self.screen, no_color, self.noButtonRect, border_radius=8)
         no_text = self.playerInfo.textFont2.render("NO", True, (255, 255, 255))
-        self.screen.blit(no_text, (self.noButtonRect.centerx - no_text.get_width() // 2, self.noButtonRect.centery - no_text.get_height() // 2))
+        self.screen.blit(no_text, (self.noButtonRect.centerx - no_text.get_width() // 2,
+                                   self.noButtonRect.centery - no_text.get_height() // 2))
 
-        self.screen.blit(question_text,(self.dialogBoxRect.centerx - question_text.get_width() // 2, self.dialogBoxRect.y + 30))
-        self.screen.blit(souls_text,(self.dialogBoxRect.centerx - souls_text.get_width() // 2, self.dialogBoxRect.y + 70))
+        # Draw text
+        self.screen.blit(question_text, (self.dialogBoxRect.centerx - question_text.get_width() // 2,
+                                         self.dialogBoxRect.y + 30))
+        self.screen.blit(souls_text, (self.dialogBoxRect.centerx - souls_text.get_width() // 2,
+                                      self.dialogBoxRect.y + 70))
 
-        self.screen.blit(self.tvOverlay, (0, 0))
         pygame.display.update()
-
 
     def handleRevive(self):
         souls = getattr(self.playerInfo, 'souls', 0)
@@ -1966,6 +1988,7 @@ class GameState(State):
                 self.playerInfo.amountOfDiscards = 4
                 self.showReviveOption = False
                 self.showRedTint = False
+                self.playerInfo.boss_rush_revive_used = True
 
                 if hasattr(self, 'switchToBossTheme'):
                     print("DEBUG: Calling switchToBossTheme for boss rush revive")
@@ -1980,6 +2003,8 @@ class GameState(State):
                 print(f"BOSS RUSH: Revived! {self.playerInfo.souls} souls remaining")
                 return True
             return False
+
+        # NORMAL GAME REVIVE
 
         if souls >= revive_cost and not has_revived:
             self.gameOverTriggered = False

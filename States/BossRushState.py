@@ -565,7 +565,7 @@ class BossRushState(GameState):
             self.go_to_shop_between_bosses()
         else:
             # All bosses defeated!
-            self.win_screen()
+            self.win_transition()
 
     def go_to_shop_between_bosses(self):
         # ===== SAVE TO State.player_info (CONSISTENT WITH GameState) =====
@@ -885,7 +885,8 @@ class BossRushState(GameState):
                 'boss_rush_coming_from_shop',
                 'saved_player_jokers',
                 'saved_player_consumables',
-                'saved_boss_rush_state'
+                'saved_boss_rush_state',
+                'boss_rush_revive_used',
             ]
 
             for attr in attrs_to_clear:
@@ -900,6 +901,24 @@ class BossRushState(GameState):
         # Normal gameplay drawing
         self.screen.blit(self.background, (0, 0))
         super().draw()
+
+    def win_transition(self):
+        boss_scene = self.screen.copy()
+
+        fade = pygame.Surface((1300, 750), pygame.SRCALPHA)
+
+        for alpha in [64, 128, 192, 255]:
+            self.screen.blit(boss_scene, (0, 0))
+            fade.fill((0, 0, 0, alpha))
+            self.screen.blit(fade, (0, 0))
+
+            if hasattr(self, 'tvOverlay'):
+                self.screen.blit(self.tvOverlay, (0, 0))
+
+            pygame.display.update()
+            pygame.time.wait(50)
+
+        self.win_screen()
 
     def userInput(self, events):
         # Handle win screen input
