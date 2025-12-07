@@ -101,6 +101,8 @@ class BossRushState(GameState):
             self.playerInfo.amountOfHands = saved['amountOfHands']
             self.playerInfo.amountOfDiscards = saved['amountOfDiscards']
 
+            self.max_consumables = 5
+
             # Clear the saved state so we don't restore again
             self.playerInfo.saved_boss_rush_state = None
 
